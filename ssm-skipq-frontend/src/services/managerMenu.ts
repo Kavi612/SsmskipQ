@@ -13,14 +13,14 @@ interface MenuItemResponse {
 
 export const fetchManagerMenu = async () => {
   const { data } = await api.get<ManagerMenuResponse>(
-    '/api/menu/manager/items',
+    '/menu/manager/items',
   );
   return data.data;
 };
 
 export const createMenuItem = async (formData: FormData) => {
   const { data } = await api.post<MenuItemResponse>(
-    '/api/menu/items',
+    '/menu/items',
     formData,
     {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -31,7 +31,7 @@ export const createMenuItem = async (formData: FormData) => {
 
 export const updateMenuItem = async (id: string, formData: FormData) => {
   const { data } = await api.patch<MenuItemResponse>(
-    `/api/menu/items/${id}`,
+    `/menu/items/${id}`,
     formData,
     { headers: { 'Content-Type': 'multipart/form-data' } },
   );
@@ -40,7 +40,7 @@ export const updateMenuItem = async (id: string, formData: FormData) => {
 
 export const updateMenuItemPrice = async (id: string, price: number) => {
   const { data } = await api.patch<MenuItemResponse>(
-    `/api/menu/items/${id}/price`,
+    `/menu/items/${id}/price`,
     { price },
   );
   return data.data.item;
@@ -48,11 +48,11 @@ export const updateMenuItemPrice = async (id: string, price: number) => {
 
 export const toggleMenuItemAvailability = async (id: string) => {
   const { data } = await api.patch<MenuItemResponse>(
-    `/api/menu/items/${id}/availability`,
+    `/menu/items/${id}/availability`,
   );
   return data.data.item;
 };
 
 export const deleteMenuItem = async (id: string) => {
-  await api.delete(`/api/menu/items/${id}`);
+  await api.delete(`/menu/items/${id}`);
 };

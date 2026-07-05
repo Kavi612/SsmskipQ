@@ -37,13 +37,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const registerStudent = useCallback(async (name: string, mobile: string) => {
-    const { data } = await api.post<AuthResponse>(
-      '/api/auth/student-register',
-      {
-        name,
-        mobile,
-      },
-    );
+    const { data } = await api.post<AuthResponse>('/auth/student-register', {
+      name,
+      mobile,
+    });
 
     if (!data.success) {
       throw new Error(data.message || 'Registration failed');
@@ -54,7 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const loginStudent = useCallback(async (mobile: string) => {
-    const { data } = await api.post<AuthResponse>('/api/auth/student-login', {
+    const { data } = await api.post<AuthResponse>('/auth/student-login', {
       mobile,
     });
 
@@ -68,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const loginManager = useCallback(
     async (managerId: string, password: string) => {
-      const { data } = await api.post<AuthResponse>('/api/auth/manager-login', {
+      const { data } = await api.post<AuthResponse>('/auth/manager-login', {
         managerId,
         password,
       });
@@ -93,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        const { data } = await api.get<MeResponse>('/api/auth/me');
+        const { data } = await api.get<MeResponse>('/auth/me');
         if (data.success) {
           setUser(data.data.user);
         } else {

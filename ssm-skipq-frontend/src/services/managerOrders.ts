@@ -12,13 +12,13 @@ interface OrderResponse {
 }
 
 export const fetchManagerOrders = async () => {
-  const { data } = await api.get<ManagerOrdersResponse>('/api/orders/manager');
+  const { data } = await api.get<ManagerOrdersResponse>('/orders/manager');
   return data.data.orders;
 };
 
 export const advanceOrderStatus = async (orderId: string) => {
   const { data } = await api.patch<OrderResponse>(
-    `/api/orders/${orderId}/status`,
+    `/orders/${orderId}/status`,
   );
   return data.data.order;
 };
@@ -28,7 +28,7 @@ export const updateOrderPayment = async (
   paymentStatus: 'PENDING' | 'PAID',
 ) => {
   const { data } = await api.patch<OrderResponse>(
-    `/api/orders/${orderId}/payment`,
+    `/orders/${orderId}/payment`,
     { paymentStatus },
   );
   return data.data.order;

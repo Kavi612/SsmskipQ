@@ -10,7 +10,7 @@ export const submitOrderFeedback = async (
   payload: SubmitFeedbackPayload,
 ) => {
   const { data } = await api.post<FeedbackResponse>(
-    `/api/orders/${orderId}/feedback`,
+    `/orders/${orderId}/feedback`,
     payload,
   );
   return data.data.feedback;
@@ -18,7 +18,7 @@ export const submitOrderFeedback = async (
 
 export const fetchManagerFeedback = async () => {
   const { data } = await api.get<ManagerFeedbackResponse>(
-    '/api/orders/feedback/manager',
+    '/orders/feedback/manager',
   );
   return data.data.feedback;
 };
