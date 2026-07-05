@@ -1,0 +1,38 @@
+.card {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.image {
+  flex-shrink: 0;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: var(--radius-md);
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  justify-content: center;
+}
+
+.lineTitle {
+  height: 0.875rem;
+  width: 70%;
+}
+
+.lineDesc {
+  height: 0.625rem;
+  width: 90%;
+}
+
+.linePrice {
+  height: 1rem;
+  width: 3rem;
+}

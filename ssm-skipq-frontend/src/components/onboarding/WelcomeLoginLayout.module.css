@@ -1,0 +1,87 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(
+    180deg,
+    var(--color-primary-muted) 0%,
+    var(--color-bg) 38%
+  );
+}
+
+.collageHeader {
+  flex-shrink: 0;
+  padding-top: var(--space-4);
+}
+
+.logoHeader {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-8) var(--space-4) var(--space-2);
+}
+
+.logo {
+  width: min(9rem, 42vw);
+  height: auto;
+  object-fit: contain;
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: var(--space-2) var(--space-6) var(--space-8);
+}
+
+.wordmark {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-display);
+  font-size: clamp(var(--font-size-xl), 5vw, var(--font-size-2xl));
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+.headline {
+  margin: 0 0 var(--space-6);
+  font-family: var(--font-display);
+  font-size: clamp(var(--font-size-lg), 4vw, var(--font-size-xl));
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--color-text);
+  text-align: center;
+}
+
+.lead {
+  margin: calc(-1 * var(--space-4)) 0 var(--space-6);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.footer {
+  margin-top: var(--space-8);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.footer a {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+.footer a:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main {
+    animation: none !important;
+  }
+}

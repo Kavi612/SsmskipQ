@@ -1,0 +1,55 @@
+.card {
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  list-style: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.token {
+  height: 1.25rem;
+  width: 4rem;
+}
+
+.badge {
+  height: 1.5rem;
+  width: 5rem;
+  border-radius: var(--radius-full);
+}
+
+.line {
+  height: 0.75rem;
+  width: 85%;
+  margin-bottom: var(--space-2);
+}
+
+.lineShort {
+  height: 0.75rem;
+  width: 55%;
+  margin-bottom: var(--space-3);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.price {
+  height: 1rem;
+  width: 3rem;
+}
+
+.meta {
+  height: 0.75rem;
+  width: 6rem;
+}

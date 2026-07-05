@@ -1,0 +1,30 @@
+.layout {
+  min-height: 100vh;
+  background-color: var(--color-gray-50);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  padding: var(--space-4);
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  width: 100%;
+  max-width: var(--max-width-content);
+}
+
+@media (min-width: 768px) {
+  .body {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .main {
+    padding: var(--space-6);
+    padding-bottom: var(--space-6);
+    min-width: 0;
+  }
+}

@@ -1,0 +1,10 @@
+.layout {
+  min-height: 100vh;
+  background-color: var(--color-gray-50);
+}
+
+.main {
+  min-height: 100vh;
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  width: 100%;
+}

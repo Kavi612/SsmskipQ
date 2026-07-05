@@ -1,0 +1,26 @@
+.collage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4) var(--space-2);
+  pointer-events: none;
+}
+
+.food {
+  width: clamp(4.75rem, 21vw, 6.5rem);
+  height: auto;
+  object-fit: contain;
+  margin-left: clamp(-1.75rem, -5vw, -1.25rem);
+  border-radius: var(--radius-lg);
+  filter: drop-shadow(0 6px 14px rgb(0 0 0 / 0.12));
+}
+
+.food:first-child {
+  margin-left: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .food {
+    transform: none !important;
+  }
+}

@@ -1,0 +1,96 @@
+.root {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background-color: var(--color-bg);
+}
+
+.authLayer {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+.splashLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-6) var(--space-4) var(--space-10);
+  margin: 0;
+  border: none;
+  cursor: pointer;
+  background-color: var(--color-primary);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 22rem;
+  text-align: center;
+}
+
+.heroWrap {
+  position: relative;
+  width: min(17.5rem, 72vw);
+  margin-bottom: var(--space-6);
+}
+
+.hero {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  mix-blend-mode: screen;
+}
+
+.wordmark {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-display);
+  font-size: clamp(var(--font-size-2xl), 6vw, var(--font-size-3xl));
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-inverse);
+  letter-spacing: -0.02em;
+}
+
+.tagline {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: rgb(255 255 255 / 0.92);
+  line-height: var(--line-height-relaxed);
+}
+
+.tapHint {
+  position: absolute;
+  bottom: calc(var(--space-8) + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: rgb(255 255 255 / 0.75);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero {
+    animation: none !important;
+  }
+
+  .splashLayer {
+    transition: none;
+  }
+}

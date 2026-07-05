@@ -1,0 +1,76 @@
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.step {
+  display: flex;
+  gap: var(--space-3);
+  padding-bottom: var(--space-5);
+  position: relative;
+}
+
+.step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 0.6875rem;
+  top: 1.375rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-gray-200);
+}
+
+.stepComplete:not(:last-child)::before {
+  background: var(--color-primary);
+}
+
+.dot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  margin-top: 2px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-gray-300);
+  background: var(--color-surface);
+  color: var(--color-text-inverse);
+  z-index: 1;
+}
+
+.stepComplete .dot {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.stepActive .dot {
+  box-shadow: 0 0 0 4px var(--color-primary-muted);
+}
+
+.stepBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 1px;
+}
+
+.stepLabel {
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.stepComplete .stepLabel {
+  color: var(--color-text);
+}
+
+.stepHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
