@@ -8,30 +8,32 @@ import authRoutes from './routes/authRoutes.js';
 import menuRoutes from './routes/menuRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
-import { getAllowedOrigins } from './utils/corsOrigins.js';
+import {
+  getAllowedOrigins,
+  createCorsOriginValidator,
+} from './utils/corsOrigins.js';
 import { socketAuthMiddleware } from './middleware/socketAuth.js';
 
 dotenv.config();
 
 const allowedOrigins = getAllowedOrigins();
+const corsOptions = {
+  origin: createCorsOriginValidator(allowedOrigins),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
 
 const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    credentials: true,
-  },
+  cors: corsOptions,
 });
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  }),
-);
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -84,6 +86,7 @@ const startServer = async () => {
 
   server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
   });
 };
 
