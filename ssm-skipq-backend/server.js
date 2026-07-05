@@ -10,18 +10,24 @@ import orderRoutes from './routes/orderRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import {
   getAllowedOrigins,
-  createCorsOriginValidator,
+  getCorsOptions,
+  isOriginAllowed,
 } from './utils/corsOrigins.js';
 import { socketAuthMiddleware } from './middleware/socketAuth.js';
 
 dotenv.config();
 
+const corsOptions = getCorsOptions();
 const allowedOrigins = getAllowedOrigins();
-const corsOptions = {
-  origin: createCorsOriginValidator(allowedOrigins),
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+
+const applyCorsHeaders = (req, res) => {
+  const origin = req.headers.origin;
+
+  if (origin && isOriginAllowed(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Vary', 'Origin');
+  }
 };
 
 const app = express();
@@ -31,8 +37,24 @@ const io = new Server(server, {
   cors: corsOptions,
 });
 
+// CORS must run before every route (including preflight OPTIONS).
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
+
+// Backup preflight handler so OPTIONS never falls through without headers.
+app.use((req, res, next) => {
+  if (req.method !== 'OPTIONS') {
+    next();
+    return;
+  }
+
+  applyCorsHeaders(req, res);
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+  );
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.status(204).end();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -77,6 +99,12 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(`Socket disconnected: ${socket.id}`);
   });
+});
+
+// Keep CORS headers on error responses (e.g. 401/500) for allowed origins.
+app.use((err, req, res, next) => {
+  applyCorsHeaders(req, res);
+  next(err);
 });
 
 const PORT = process.env.PORT || 5000;
