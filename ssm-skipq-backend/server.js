@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import http from 'http';
 import express from 'express';
 import cors from 'cors';
+import mongoose from 'mongoose';
 import { Server } from 'socket.io';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
@@ -37,33 +38,26 @@ const io = new Server(server, {
   cors: corsOptions,
 });
 
-// CORS must run before every route (including preflight OPTIONS).
+// CORS before every route.
 app.use(cors(corsOptions));
-
-// Backup preflight handler so OPTIONS never falls through without headers.
-app.use((req, res, next) => {
-  if (req.method !== 'OPTIONS') {
-    next();
-    return;
-  }
-
-  applyCorsHeaders(req, res);
-  res.setHeader(
-    'Access-Control-Allow-Methods',
-    'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-  );
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.status(204).end();
-});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.get('/', (_req, res) => {
+  res.json({
+    success: true,
+    message: 'SSM SkipQ API',
+    health: '/api/health',
+  });
+});
 
 app.get('/api/health', (_req, res) => {
   res.json({
     success: true,
     message: 'SSM SkipQ API is running',
     timestamp: new Date().toISOString(),
+    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
   });
 });
 
@@ -101,21 +95,38 @@ io.on('connection', (socket) => {
   });
 });
 
-// Keep CORS headers on error responses (e.g. 401/500) for allowed origins.
+// Keep CORS headers on error responses for allowed browser origins.
 app.use((err, req, res, next) => {
   applyCorsHeaders(req, res);
   next(err);
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
+const HOST = '0.0.0.0';
 
 const startServer = async () => {
-  await connectDB();
+  // Listen immediately so Railway's proxy can reach the app while DB connects.
+  await new Promise((resolve, reject) => {
+    server.listen(PORT, HOST, (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
 
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
+      console.log(`Server running on http://${HOST}:${PORT}`);
+      console.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
+      resolve();
+    });
   });
+
+  try {
+    await connectDB();
+  } catch (error) {
+    console.error('MongoDB connection error:', error.message);
+  }
 };
 
-startServer();
+startServer().catch((error) => {
+  console.error('Failed to start server:', error.message);
+  process.exit(1);
+});
