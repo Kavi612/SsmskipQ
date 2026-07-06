@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import logoAppIcon from '../assets/logo-app-icon.png';
 import styles from './ManagerHeader.module.css';
 
@@ -8,7 +8,6 @@ interface ManagerHeaderProps {
 }
 
 const TITLES: Record<string, string> = {
-  '/manager': 'Dashboard',
   '/manager/orders': 'Orders',
   '/manager/menu': 'Menu',
   '/manager/feedback': 'Feedback',
@@ -17,20 +16,26 @@ const TITLES: Record<string, string> = {
 
 const ManagerHeader = ({ onRefresh }: ManagerHeaderProps) => {
   const { pathname } = useLocation();
-  const title = TITLES[pathname] ?? 'SkipQ';
+  const pageTitle = TITLES[pathname];
 
   return (
     <header className={styles.header}>
-      <button type="button" className={styles.iconBtn} aria-label="Menu">
-        <Menu size={22} />
-      </button>
-      {pathname === '/manager' ? (
-        <Link to="/manager" className={styles.logoLink}>
-          <img src={logoAppIcon} alt="SkipQ@SSM" className={styles.logo} />
-        </Link>
+      <Link to="/manager" className={styles.logoLink}>
+        <img src={logoAppIcon} alt="SkipQ@SSM" className={styles.logo} />
+      </Link>
+
+      {pageTitle ? (
+        <h1 className={styles.title}>{pageTitle}</h1>
       ) : (
-        <h1 className={styles.title}>{title}</h1>
+        <div className={styles.tagline}>
+          <span>Pre-Order</span>
+          <span className={styles.taglineSep} aria-hidden="true">
+            ·
+          </span>
+          <span>Pick Up</span>
+        </div>
       )}
+
       {onRefresh ? (
         <button
           type="button"
@@ -41,7 +46,7 @@ const ManagerHeader = ({ onRefresh }: ManagerHeaderProps) => {
           <RefreshCw size={20} />
         </button>
       ) : (
-        <span className={styles.spacer} />
+        <span className={styles.spacer} aria-hidden="true" />
       )}
     </header>
   );
