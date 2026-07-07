@@ -12,8 +12,14 @@ export const getAllowedOrigins = () => {
   return [...new Set([...DEFAULT_ORIGINS, ...fromEnv].map(normalizeOrigin))];
 };
 
+const isLocalDevOrigin = (origin) =>
+  /^http:\/\/localhost:\d+$/.test(normalizeOrigin(origin));
+
 export const isOriginAllowed = (origin) => {
   if (!origin) return false;
+  if (process.env.NODE_ENV !== 'production' && isLocalDevOrigin(origin)) {
+    return true;
+  }
   return getAllowedOrigins().includes(normalizeOrigin(origin));
 };
 
