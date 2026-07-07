@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import {
   ClipboardList,
   LayoutDashboard,
+  MessageSquare,
   UtensilsCrossed,
   User,
 } from 'lucide-react';
@@ -11,6 +12,12 @@ const navItems = [
   { to: '/manager', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/manager/orders', label: 'Orders', icon: ClipboardList, end: false },
   { to: '/manager/menu', label: 'Menu', icon: UtensilsCrossed, end: false },
+  {
+    to: '/manager/feedback',
+    label: 'Feedback',
+    icon: MessageSquare,
+    end: false,
+  },
   { to: '/manager/profile', label: 'Profile', icon: User, end: false },
 ];
 
