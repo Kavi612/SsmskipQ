@@ -4,8 +4,8 @@ const DEFAULT_API_URL = 'http://localhost:5000/api';
 
 /**
  * Normalizes VITE_API_URL into an absolute API base URL ending with /api.
- * Adds https:// when the env value has no protocol (fixes Railway treating
- * the backend host as a relative path on the frontend domain).
+ * Adds https:// when the env value has no protocol so the URL is never
+ * treated as a relative path on the frontend domain.
  */
 export const resolveApiBaseUrl = (
   raw: string | undefined = import.meta.env.VITE_API_URL,

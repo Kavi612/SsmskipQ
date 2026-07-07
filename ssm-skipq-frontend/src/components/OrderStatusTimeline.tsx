@@ -23,19 +23,27 @@ interface OrderStatusTimelineProps {
 }
 
 const OrderStatusTimeline = ({ status }: OrderStatusTimelineProps) => {
-  const currentRank = status === 'PENDING' ? 0 : (STATUS_RANK[status] ?? 0);
+  const currentRank =
+    status === 'CANCELLED' ? -1 : (STATUS_RANK[status] ?? 0);
 
   return (
     <ol className={styles.timeline}>
       {STEPS.map((step, index) => {
         const stepRank = STATUS_RANK[step.status];
-        const isComplete = currentRank >= stepRank && status !== 'CANCELLED';
-        const isActive = currentRank === stepRank && status !== 'PICKED_UP';
+        const isComplete =
+          status !== 'CANCELLED' &&
+          status !== 'PENDING' &&
+          currentRank >= stepRank;
+        const isCurrent =
+          status !== 'CANCELLED' &&
+          status !== 'PICKED_UP' &&
+          ((status === 'PENDING' && index === 0) ||
+            currentRank === stepRank);
 
         return (
           <li
             key={step.status}
-            className={`${styles.step} ${isComplete ? styles.stepComplete : ''} ${isActive ? styles.stepActive : ''}`}
+            className={`${styles.step} ${isComplete ? styles.stepComplete : ''} ${isCurrent ? styles.stepCurrent : ''}`}
           >
             <span className={styles.dot}>
               {isComplete && <Check size={12} strokeWidth={3} />}

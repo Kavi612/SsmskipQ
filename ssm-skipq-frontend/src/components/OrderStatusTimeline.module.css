@@ -22,6 +22,7 @@
   bottom: 0;
   width: 2px;
   background: var(--color-gray-200);
+  transition: background-color var(--transition-base);
 }
 
 .stepComplete:not(:last-child)::before {
@@ -41,6 +42,10 @@
   background: var(--color-surface);
   color: var(--color-text-inverse);
   z-index: 1;
+  transition:
+    background-color var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
 }
 
 .stepComplete .dot {
@@ -48,8 +53,14 @@
   border-color: var(--color-primary);
 }
 
-.stepActive .dot {
-  box-shadow: 0 0 0 4px var(--color-primary-muted);
+.stepCurrent:not(.stepComplete) .dot {
+  border-color: var(--color-primary);
+  background: var(--color-primary-muted);
+  box-shadow: 0 0 0 4px rgb(254 65 1 / 0.12);
+}
+
+.stepCurrent.stepComplete .dot {
+  box-shadow: 0 0 0 4px rgb(254 65 1 / 0.18);
 }
 
 .stepBody {
@@ -64,10 +75,16 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
+  transition: color var(--transition-base);
 }
 
-.stepComplete .stepLabel {
+.stepComplete .stepLabel,
+.stepCurrent .stepLabel {
   color: var(--color-text);
+}
+
+.stepCurrent .stepLabel {
+  color: var(--color-primary);
 }
 
 .stepHint {

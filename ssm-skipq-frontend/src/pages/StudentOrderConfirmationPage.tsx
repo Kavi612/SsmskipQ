@@ -1,7 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 import OrderStatusTimeline from '../components/OrderStatusTimeline';
+import { fetchMyOrders } from '../services/orders';
+import { joinStudentRoom } from '../services/socket';
 import type { Order } from '../types/order';
 import styles from './StudentOrderConfirmationPage.module.css';
 
@@ -18,15 +21,57 @@ const paymentLabel = (order: Order) => {
 };
 
 const StudentOrderConfirmationPage = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const order = location.state?.order as Order | undefined;
+  const initialOrder = location.state?.order as Order | undefined;
+  const [order, setOrder] = useState<Order | undefined>(initialOrder);
 
   useEffect(() => {
-    if (!order) {
+    if (!initialOrder) {
       navigate('/student/orders', { replace: true });
     }
-  }, [order, navigate]);
+  }, [initialOrder, navigate]);
+
+  useEffect(() => {
+    if (!initialOrder) return;
+
+    setOrder(initialOrder);
+
+    let cancelled = false;
+
+    fetchMyOrders()
+      .then((orders) => {
+        if (cancelled) return;
+        const latest = orders.find((item) => item.id === initialOrder.id);
+        if (latest) setOrder(latest);
+      })
+      .catch(() => {
+        // Keep the order from checkout if refresh fails.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialOrder]);
+
+  useEffect(() => {
+    if (!user || user.role !== 'student' || !initialOrder) return;
+
+    const socket = joinStudentRoom();
+
+    const handleUpdate = (updated: Order) => {
+      if (updated.id === initialOrder.id) {
+        setOrder(updated);
+      }
+    };
+
+    socket.on('order:updated', handleUpdate);
+
+    return () => {
+      socket.off('order:updated', handleUpdate);
+    };
+  }, [user, initialOrder]);
 
   if (!order) return null;
 

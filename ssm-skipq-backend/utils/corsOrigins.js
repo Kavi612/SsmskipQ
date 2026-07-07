@@ -1,11 +1,8 @@
-const DEFAULT_ORIGINS = [
-  'http://localhost:5173',
-  'https://ssmskipq-production.up.railway.app',
-];
+const DEFAULT_ORIGINS = ['http://localhost:5173'];
 
 const normalizeOrigin = (origin) => origin.replace(/\/+$/, '');
 
-/** Merge defaults with comma-separated CLIENT_URL env var. */
+/** Merge localhost default with comma-separated CLIENT_URL env var. */
 export const getAllowedOrigins = () => {
   const fromEnv = (process.env.CLIENT_URL || '')
     .split(',')
