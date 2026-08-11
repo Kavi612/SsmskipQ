@@ -12,6 +12,7 @@ Students browse the menu, build a cart, pay (mock online or at counter), and tra
 skipQ/
 ├── ssm-skipq-backend/     # Express + MongoDB + Socket.io API
 ├── ssm-skipq-frontend/    # React + Vite PWA
+├── ssm-skipq-flutter/     # Flutter mobile app (Android + iOS)
 └── pictures/              # Source logos and food photos
 ```
 
@@ -21,7 +22,8 @@ skipQ/
 
 | Layer | Technologies |
 |-------|----------------|
-| **Frontend** | React 19, Vite, TypeScript, React Router, CSS Modules, Framer Motion, lucide-react, Socket.io client, vite-plugin-pwa |
+| **Frontend (Web)** | React 19, Vite, TypeScript, React Router, CSS Modules, Framer Motion, lucide-react, Socket.io client, vite-plugin-pwa |
+| **Frontend (Mobile)** | Flutter, Dart, Provider, go_router, Dio, Socket.io client, image_picker |
 | **Backend** | Node.js, Express 5, Mongoose, JWT, Socket.io, Multer, Cloudinary |
 | **Database** | MongoDB Atlas |
 
@@ -117,7 +119,7 @@ cp .env.example .env   # Windows: copy .env.example .env
 Set:
 
 ```env
-VITE_API_URL=http://localhost:5000
+VITE_API_URL=http://localhost:5000/api
 ```
 
 Start the app:
@@ -160,6 +162,12 @@ App runs at **http://localhost:5173**
 | `npm run preview` | Preview production build |
 | `npm run lint` | ESLint |
 | `npm run generate:icons` | Regenerate PWA icons from `logo-square.png` |
+
+### Flutter mobile app (`ssm-skipq-flutter`)
+
+**No local Flutter install needed.** Push to GitHub → **Actions** → **Build Flutter APK** → download the APK artifact.
+
+See **[ssm-skipq-flutter/FLUTTER_SETUP_AND_APK.md](./ssm-skipq-flutter/FLUTTER_SETUP_AND_APK.md)** (install → run → APK) or **[ssm-skipq-flutter/README.md](./ssm-skipq-flutter/README.md)** for cloud build.
 
 ---
 
@@ -205,6 +213,8 @@ PATCH /api/settings/ordering-window (manager)
 
 ## Deployment
 
+For full step-by-step instructions (Atlas, Cloudinary, Render, Vercel, checklist, troubleshooting), see **[DEPLOYMENT.md](./DEPLOYMENT.md)**.
+
 ### Backend (Render)
 
 Set environment variables from `.env.example`:
@@ -224,7 +234,7 @@ Start command: `npm start`
 ### Frontend (Vercel)
 
 ```env
-VITE_API_URL=https://your-api.onrender.com
+VITE_API_URL=https://your-api.onrender.com/api
 ```
 
 Build command: `npm run build`  

@@ -29,7 +29,7 @@ const StudentOrderConfirmationPage = () => {
 
   useEffect(() => {
     if (!initialOrder) {
-      navigate('/student/orders', { replace: true });
+      navigate('/student', { replace: true });
     }
   }, [initialOrder, navigate]);
 
@@ -122,8 +122,8 @@ const StudentOrderConfirmationPage = () => {
           </div>
         </section>
 
-        <Link to="/student/orders" className={styles.outlineBtn}>
-          VIEW PREVIOUS ORDERS
+        <Link to="/student" className={styles.outlineBtn}>
+          BACK TO HOME
         </Link>
       </div>
     </div>

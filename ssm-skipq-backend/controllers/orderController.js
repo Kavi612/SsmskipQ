@@ -3,21 +3,19 @@ import Order from '../models/Order.js';
 import Counter from '../models/Counter.js';
 import MenuItem from '../models/MenuItem.js';
 import Feedback from '../models/Feedback.js';
-import { getTodayDateKey, formatTokenNumber } from '../utils/token.js';
+import { getTodayDateKey, formatTokenNumber, getTodayStartIst } from '../utils/token.js';
 import { assertOrderingOpen } from '../controllers/settingsController.js';
 
 const STATUS_FLOW = {
   PENDING: 'CONFIRMED',
-  CONFIRMED: 'PREPARING',
+  CONFIRMED: 'READY',
   PREPARING: 'READY',
-  READY: 'PICKED_UP',
 };
 
 const STATUS_ACTION_LABELS = {
   PENDING: 'Accept',
-  CONFIRMED: 'Preparing',
+  CONFIRMED: 'Ready',
   PREPARING: 'Ready',
-  READY: 'Collected',
 };
 
 export const formatOrder = (order) => ({
@@ -200,9 +198,16 @@ export const createOrder = async (req, res) => {
 export const getMyOrders = async (req, res) => {
   try {
     const studentId = req.user.id;
+    const todayStart = getTodayStartIst();
 
     const [orders, feedbackRows] = await Promise.all([
-      Order.find({ studentId }).sort({ createdAt: -1 }).lean(),
+      Order.find({
+        studentId,
+        createdAt: { $gte: todayStart },
+        status: { $nin: ['PICKED_UP', 'CANCELLED'] },
+      })
+        .sort({ createdAt: -1 })
+        .lean(),
       Feedback.find({ studentId }).select('orderId').lean(),
     ]);
 
@@ -238,7 +243,9 @@ export const getMyOrders = async (req, res) => {
 
 export const getManagerOrders = async (_req, res) => {
   try {
-    const orders = await Order.find()
+    const todayStart = getTodayStartIst();
+
+    const orders = await Order.find({ createdAt: { $gte: todayStart } })
       .populate('studentId', 'name mobile')
       .sort({ createdAt: -1 })
       .lean();
@@ -322,11 +329,25 @@ export const updateOrderPayment = async (req, res) => {
     if (order.paymentMethod !== 'PAY_AT_COUNTER') {
       return res.status(400).json({
         success: false,
-        message: 'Payment status can only be toggled for counter payments',
+        message: 'Payment status can only be updated for counter payments',
       });
     }
 
-    order.paymentStatus = paymentStatus;
+    if (paymentStatus !== 'PAID') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only payment received is supported',
+      });
+    }
+
+    if (order.paymentStatus === 'PAID') {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment already received',
+      });
+    }
+
+    order.paymentStatus = 'PAID';
     await order.save();
 
     emitOrderUpdate(req, order);

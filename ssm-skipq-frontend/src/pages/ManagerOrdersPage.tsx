@@ -14,9 +14,8 @@ import styles from './ManagerOrdersPage.module.css';
 
 const STATUS_ACTION: Partial<Record<OrderStatus, string>> = {
   PENDING: 'Accept',
-  CONFIRMED: 'Preparing',
+  CONFIRMED: 'Ready',
   PREPARING: 'Ready',
-  READY: 'Collected',
 };
 
 const paymentMethodLabel = (method: Order['paymentMethod']) => {
@@ -116,11 +115,11 @@ const ManagerOrdersPage = () => {
     }
   };
 
-  const handlePaymentToggle = async (order: Order) => {
+  const handlePaymentReceived = async (order: Order) => {
+    if (order.paymentStatus === 'PAID') return;
     setActionLoading(order.id);
     try {
-      const newStatus = order.paymentStatus === 'PAID' ? 'PENDING' : 'PAID';
-      const updated = await updateOrderPayment(order.id, newStatus);
+      const updated = await updateOrderPayment(order.id, 'PAID');
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
     } catch {
       setError('Unable to update payment status.');
@@ -204,16 +203,26 @@ const ManagerOrdersPage = () => {
                     </button>
                   )}
 
-                  {order.paymentMethod === 'PAY_AT_COUNTER' && (
+                  {order.paymentMethod === 'PAY_AT_COUNTER' &&
+                    order.paymentStatus === 'PENDING' && (
                     <button
                       type="button"
-                      className={`${styles.paymentBtn} ${order.paymentStatus === 'PAID' ? styles.paymentBtnDone : ''}`}
+                      className={styles.paymentBtn}
                       disabled={actionLoading === order.id}
-                      onClick={() => handlePaymentToggle(order)}
+                      onClick={() => handlePaymentReceived(order)}
                     >
-                      {order.paymentStatus === 'PAID'
-                        ? 'Payment Received ✓'
-                        : 'Mark Payment Received'}
+                      Mark Payment Received
+                    </button>
+                  )}
+
+                  {order.paymentMethod === 'PAY_AT_COUNTER' &&
+                    order.paymentStatus === 'PAID' && (
+                    <button
+                      type="button"
+                      className={`${styles.paymentBtn} ${styles.paymentBtnDone}`}
+                      disabled
+                    >
+                      Payment Received ✓
                     </button>
                   )}
 

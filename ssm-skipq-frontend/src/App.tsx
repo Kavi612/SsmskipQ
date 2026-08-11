@@ -10,7 +10,6 @@ import StudentHomePage from './pages/StudentHomePage';
 import StudentCartPage from './pages/StudentCartPage';
 import StudentCheckoutPage from './pages/StudentCheckoutPage';
 import StudentOrderConfirmationPage from './pages/StudentOrderConfirmationPage';
-import StudentOrdersPage from './pages/StudentOrdersPage';
 import StudentProfilePage from './pages/StudentProfilePage';
 import ManagerDashboardPage from './pages/ManagerDashboardPage';
 import ManagerOrdersPage from './pages/ManagerOrdersPage';
@@ -40,7 +39,7 @@ function App() {
                 path="/student/order-confirmation"
                 element={<StudentOrderConfirmationPage />}
               />
-              <Route path="/student/orders" element={<StudentOrdersPage />} />
+              <Route path="/student/orders" element={<Navigate to="/student" replace />} />
               <Route path="/student/profile" element={<StudentProfilePage />} />
             </Route>
           </Route>

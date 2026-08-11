@@ -3,8 +3,8 @@ import styles from './OrderStatusBadge.module.css';
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   PENDING: 'Pending',
-  CONFIRMED: 'Confirmed',
-  PREPARING: 'Preparing',
+  CONFIRMED: 'Accepted',
+  PREPARING: 'Accepted',
   READY: 'Ready',
   PICKED_UP: 'Collected',
   CANCELLED: 'Cancelled',

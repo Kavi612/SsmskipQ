@@ -3,18 +3,16 @@ import type { OrderStatus } from '../types/order';
 import styles from './OrderStatusTimeline.module.css';
 
 const STEPS: { status: OrderStatus; label: string }[] = [
-  { status: 'CONFIRMED', label: 'Order Received' },
-  { status: 'PREPARING', label: 'Preparing' },
+  { status: 'CONFIRMED', label: 'Accepted' },
   { status: 'READY', label: 'Ready for Pickup' },
-  { status: 'PICKED_UP', label: 'Collected' },
 ];
 
 const STATUS_RANK: Record<OrderStatus, number> = {
   PENDING: 0,
   CONFIRMED: 1,
-  PREPARING: 2,
-  READY: 3,
-  PICKED_UP: 4,
+  PREPARING: 1,
+  READY: 2,
+  PICKED_UP: 3,
   CANCELLED: -1,
 };
 
@@ -52,7 +50,7 @@ const OrderStatusTimeline = ({ status }: OrderStatusTimelineProps) => {
               <span className={styles.stepLabel}>{step.label}</span>
               {index === 0 && status === 'PENDING' && (
                 <span className={styles.stepHint}>
-                  Waiting for confirmation
+                  Waiting for acceptance
                 </span>
               )}
             </div>

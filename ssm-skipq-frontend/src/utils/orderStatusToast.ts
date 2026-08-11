@@ -1,10 +1,9 @@
 import type { OrderStatus } from '../types/order';
 
 const STUDENT_STATUS_TOAST: Partial<Record<OrderStatus, string>> = {
-  CONFIRMED: 'Order Confirmed',
-  PREPARING: 'Preparing',
+  CONFIRMED: 'Order Accepted',
+  PREPARING: 'Order Accepted',
   READY: 'Ready for Pickup',
-  PICKED_UP: 'Order Completed',
 };
 
 export const getStudentStatusToastTitle = (

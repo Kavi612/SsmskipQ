@@ -1,0 +1,186 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../config/theme.dart';
+import '../../models/menu.dart';
+import '../../models/user.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/ordering_window_provider.dart';
+import '../../services/menu_service.dart';
+import '../../utils/helpers.dart';
+import '../../widgets/food_card.dart';
+
+class StudentHomeScreen extends StatefulWidget {
+  const StudentHomeScreen({super.key, required this.menuService});
+
+  final MenuService menuService;
+
+  @override
+  State<StudentHomeScreen> createState() => _StudentHomeScreenState();
+}
+
+class _StudentHomeScreenState extends State<StudentHomeScreen> {
+  List<Category> _categories = [];
+  List<MenuItem> _items = [];
+  String? _selectedCategoryId;
+  String _search = '';
+  VegFilter _vegFilter = VegFilter.all;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final results = await Future.wait([
+        widget.menuService.fetchCategories(),
+        widget.menuService.fetchMenuItems(),
+      ]);
+      setState(() {
+        _categories = results[0] as List<Category>;
+        _items = results[1] as List<MenuItem>;
+      });
+    } catch (_) {
+      setState(() => _error = 'Unable to load menu. Please try again.');
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  List<MenuItem> get _filtered {
+    var result = _items;
+    if (_selectedCategoryId != null) {
+      result = result.where((e) => e.categoryId == _selectedCategoryId).toList();
+    }
+    if (_vegFilter == VegFilter.veg) {
+      result = result.where((e) => e.isVeg).toList();
+    } else if (_vegFilter == VegFilter.nonveg) {
+      result = result.where((e) => !e.isVeg).toList();
+    }
+    final q = _search.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      result = result
+          .where((e) =>
+              e.name.toLowerCase().contains(q) ||
+              e.description.toLowerCase().contains(q) ||
+              e.categoryName.toLowerCase().contains(q))
+          .toList();
+    }
+    return result;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = context.watch<AuthProvider>().user;
+    final ordering = context.watch<OrderingWindowProvider>();
+    final firstName =
+        user is StudentUser ? user.name.split(' ').first : 'Student';
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            '${timeGreeting()}, $firstName 👋',
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+          ),
+          const Text('What would you like to order today?',
+              style: TextStyle(color: AppTheme.textSecondary)),
+          if (!ordering.isOpen) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.warning.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Ordering is closed. Please visit the canteen directly.',
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          TextField(
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.search),
+              hintText: 'Search food...',
+            ),
+            onChanged: (v) => setState(() => _search = v),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            children: VegFilter.values.map((f) {
+              final label = f == VegFilter.all
+                  ? 'All'
+                  : f == VegFilter.veg
+                      ? 'Veg'
+                      : 'Non-Veg';
+              return ChoiceChip(
+                label: Text(label),
+                selected: _vegFilter == f,
+                onSelected: (_) => setState(() => _vegFilter = f),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 44,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: const Text('All'),
+                    selected: _selectedCategoryId == null,
+                    onSelected: (_) => setState(() => _selectedCategoryId = null),
+                  ),
+                ),
+                ..._categories.map(
+                  (cat) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(cat.name),
+                      selected: _selectedCategoryId == cat.id,
+                      onSelected: (_) => setState(() => _selectedCategoryId = cat.id),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text("Today's Menu",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          if (_loading)
+            const Center(child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(),
+            ))
+          else if (_error != null)
+            Text(_error!, style: const TextStyle(color: AppTheme.error))
+          else if (_filtered.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('No menu items found.', textAlign: TextAlign.center),
+            )
+          else
+            ..._filtered.map(
+              (item) => FoodCard(item: item, orderingOpen: ordering.isOpen),
+            ),
+        ],
+      ),
+    );
+  }
+}

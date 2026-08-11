@@ -1,0 +1,46 @@
+name: Build Flutter APK
+
+# Builds the Android APK in GitHub's cloud — no Flutter install on your PC.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ssm-skipq-flutter/**'
+      - '.github/workflows/flutter-apk.yml'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ssm-skipq-flutter
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Android platform files
+        run: flutter create . --org com.ssm.skipq --project-name ssm_skipq --platforms=android
+
+      - name: Build release APK
+        run: >
+          flutter build apk --release
+          --dart-define=API_BASE_URL=https://ssmskipq-1-s1dg.onrender.com/api
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: skipq-flutter-apk
+          path: ssm-skipq-flutter/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
