@@ -6,6 +6,9 @@ echo === Building SkipQ APK ===
 echo.
 flutter pub get
 if errorlevel 1 goto fail
+REM Regenerate SkipQ logo icons if assets/images/logo-app-icon.png changed
+dart run flutter_launcher_icons
+if errorlevel 1 goto fail
 flutter build apk --release --dart-define=API_BASE_URL=https://ssmskipq-1-s1dg.onrender.com/api
 if errorlevel 1 goto fail
 echo.

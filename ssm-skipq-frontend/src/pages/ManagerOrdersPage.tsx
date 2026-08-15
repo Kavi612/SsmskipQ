@@ -20,6 +20,8 @@ const STATUS_ACTION: Partial<Record<OrderStatus, string>> = {
 
 const paymentMethodLabel = (method: Order['paymentMethod']) => {
   switch (method) {
+    case 'RAZORPAY':
+      return 'Razorpay';
     case 'GOOGLE_PAY':
       return 'Google Pay';
     case 'PHONEPE':

@@ -16,6 +16,7 @@ const formatTime = (iso: string) =>
 
 const paymentLabel = (order: Order) => {
   if (order.paymentMethod === 'PAY_AT_COUNTER') return 'Pay at Counter';
+  if (order.paymentMethod === 'RAZORPAY') return 'Paid Online (Razorpay)';
   if (order.paymentMethod === 'PHONEPE') return 'PhonePe (Mock)';
   return 'Google Pay (Mock)';
 };

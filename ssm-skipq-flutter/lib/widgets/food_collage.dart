@@ -62,40 +62,42 @@ class _FoodCollageState extends State<FoodCollage>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           for (var i = 0; i < _foods.length; i++)
-            AnimatedBuilder(
-              animation: _controllers[i],
-              builder: (context, child) {
-                final y = Tween<double>(begin: 0, end: -8)
-                    .animate(CurvedAnimation(
-                      parent: _controllers[i],
-                      curve: Curves.easeInOut,
-                    ))
-                    .value;
-                return Transform.translate(
-                  offset: Offset(0, y),
-                  child: child,
-                );
-              },
-              child: Transform.rotate(
-                angle: _foods[i].rotate * 3.1415926535 / 180,
-                child: Container(
-                  width: itemWidth,
-                  margin: EdgeInsets.only(left: i == 0 ? 0 : -itemWidth * 0.28),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 14,
-                        offset: const Offset(0, 6),
+            SizedBox(
+              width: i == 0 ? itemWidth : itemWidth * 0.72,
+              child: AnimatedBuilder(
+                animation: _controllers[i],
+                builder: (context, child) {
+                  final y = Tween<double>(begin: 0, end: -8)
+                      .animate(CurvedAnimation(
+                        parent: _controllers[i],
+                        curve: Curves.easeInOut,
+                      ))
+                      .value;
+                  return Transform.translate(
+                    offset: Offset(0, y),
+                    child: child,
+                  );
+                },
+                child: Transform.rotate(
+                  angle: _foods[i].rotate * 3.1415926535 / 180,
+                  child: Container(
+                    width: itemWidth,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        _foods[i].asset,
+                        fit: BoxFit.contain,
                       ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      _foods[i].asset,
-                      fit: BoxFit.contain,
                     ),
                   ),
                 ),

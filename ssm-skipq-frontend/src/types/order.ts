@@ -1,4 +1,4 @@
-export type PaymentMethod = 'GOOGLE_PAY' | 'PHONEPE' | 'PAY_AT_COUNTER';
+export type PaymentMethod = 'GOOGLE_PAY' | 'PHONEPE' | 'PAY_AT_COUNTER' | 'RAZORPAY';
 export type PaymentStatus = 'PENDING' | 'PAID';
 export type OrderStatus =
   'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'PICKED_UP' | 'CANCELLED';
@@ -43,5 +43,14 @@ export interface OrdersResponse {
 
 export interface OrderResponse {
   success: boolean;
-  data: { order: Order };
+  data: {
+    order: Order;
+    razorpay?: {
+      orderId: string;
+      keyId: string;
+      amount: number;
+      currency: string;
+      testMode: boolean;
+    } | null;
+  };
 }

@@ -5,6 +5,12 @@ import MenuItem from '../models/MenuItem.js';
 import Feedback from '../models/Feedback.js';
 import { getTodayDateKey, formatTokenNumber, getTodayStartIst } from '../utils/token.js';
 import { assertOrderingOpen } from '../controllers/settingsController.js';
+import {
+  createRazorpayOrder,
+  getRazorpayKeyId,
+  isRazorpayConfigured,
+  isRazorpayTestMode,
+} from '../config/razorpay.js';
 
 const STATUS_FLOW = {
   PENDING: 'CONFIRMED',
@@ -66,7 +72,7 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    const validMethods = ['GOOGLE_PAY', 'PHONEPE', 'PAY_AT_COUNTER'];
+    const validMethods = ['GOOGLE_PAY', 'PHONEPE', 'PAY_AT_COUNTER', 'RAZORPAY'];
     if (!validMethods.includes(paymentMethod)) {
       return res.status(400).json({
         success: false,
@@ -74,8 +80,18 @@ export const createOrder = async (req, res) => {
       });
     }
 
+    if (paymentMethod === 'RAZORPAY' && !isRazorpayConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message:
+          'Online payment is not configured yet. Use Pay at Counter or add Razorpay test keys.',
+      });
+    }
+
     const paymentStatus =
-      paymentMethod === 'PAY_AT_COUNTER' ? 'PENDING' : 'PAID';
+      paymentMethod === 'PAY_AT_COUNTER' || paymentMethod === 'RAZORPAY'
+        ? 'PENDING'
+        : 'PAID';
 
     for (const item of items) {
       if (!item.menuItemId || !item.quantity) {
@@ -180,9 +196,37 @@ export const createOrder = async (req, res) => {
     io.to('manager').emit('order:created', formatted);
     io.to(`student:${studentId}`).emit('order:updated', formatted);
 
+    let razorpay = null;
+
+    if (paymentMethod === 'RAZORPAY') {
+      const razorpayOrder = await createRazorpayOrder({
+        amountInr: calculatedTotal,
+        receipt: createdOrder._id.toString(),
+        notes: {
+          tokenNumber: createdOrder.tokenNumber,
+          studentId,
+        },
+      });
+
+      await Order.findByIdAndUpdate(createdOrder._id, {
+        razorpayOrderId: razorpayOrder.id,
+      });
+
+      razorpay = {
+        orderId: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        keyId: getRazorpayKeyId(),
+        testMode: isRazorpayTestMode(),
+      };
+    }
+
     return res.status(201).json({
       success: true,
-      data: { order: formatted },
+      data: {
+        order: formatted,
+        razorpay,
+      },
     });
   } catch (error) {
     console.error('Create order error:', error.message);

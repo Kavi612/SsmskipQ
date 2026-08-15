@@ -19,18 +19,23 @@ dependencies:
   url_launcher: ^6.3.1
   image_picker: ^1.1.2
   google_fonts: ^6.2.1
+  razorpay_flutter: ^1.4.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/logo-app-icon.png
+  adaptive_icon_background: "#FE4101"
+  adaptive_icon_foreground: assets/images/logo-app-icon.png
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/splash-hero.png
-    - assets/images/logo-app-icon.png
-    - assets/images/collage-food-1.png
-    - assets/images/collage-food-2.png
-    - assets/images/collage-food-3.png
-    - assets/images/collage-food-4.png
+    - assets/images/

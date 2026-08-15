@@ -160,6 +160,29 @@ Wait until you see `"db":"connected"`.
 
 ---
 
+## Online payments (Razorpay test mode — no bank account)
+
+For development you do **not** need a bank account. Razorpay test mode uses fake money only.
+
+1. Create a free account at [dashboard.razorpay.com](https://dashboard.razorpay.com)
+2. Switch to **Test Mode** (toggle at top of dashboard)
+3. Go to **Account & Settings → API Keys** → Generate test keys
+4. Add to backend `.env` (in `ssm-skipq-backend`):
+   ```
+   RAZORPAY_KEY_ID=rzp_test_xxxx
+   RAZORPAY_KEY_SECRET=your_test_secret
+   ```
+5. Restart the backend (`npm run dev`)
+6. In checkout, choose **Pay Online** — Razorpay checkout opens
+
+**Test card (any future expiry, any CVV):**
+- Card number: `4111 1111 1111 1111`
+- UPI test ID: `success@razorpay`
+
+If keys are missing, checkout still works with **Pay at Counter**.
+
+---
+
 ## Common problems
 
 ### "No devices found"
@@ -233,6 +256,34 @@ Send me:
 2. **Screenshot** or copy the **red error text** from the bottom of Android Studio
 
 I will fix it in the code or tell you the exact next click.
+
+---
+
+## Android Studio shows red errors in "Inspect Code"?
+
+**This is normal for Flutter projects.** Many items are **false alarms**, not real bugs.
+
+| What Android Studio shows | Real problem? |
+|---------------------------|---------------|
+| `Unresolved class '{applicationName}'` in AndroidManifest | **No** — Flutter fills this at build time |
+| `GeneratedPluginRegistrant.m` errors (C/C++) | **No** — iOS/macOS file; ignore in Android Studio |
+| `styles.xml` / `launch_background.xml` warnings | **Usually no** — if the app runs, you are fine |
+| Red errors in `lib/` Dart files | **Yes** — tell me the file name and message |
+
+**Trust this instead of Inspect Code:**
+
+```powershell
+cd "C:\Users\Kavirathna\OneDrive\Desktop\resume projects\skipQ\ssm-skipq-flutter"
+flutter analyze
+flutter run
+```
+
+If `flutter analyze` shows **0 errors** and the app runs on the emulator, **ignore** the Android inspection panel.
+
+**Also check:**
+- Open folder **`ssm-skipq-flutter`** only (not the parent `skipQ` folder)
+- Wait for **Gradle sync** to finish (bottom status bar)
+- Close other Gradle builds (only one Android Studio / `flutter run` at a time)
 
 ---
 

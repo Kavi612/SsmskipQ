@@ -1,5 +1,16 @@
 import '../models/order.dart';
+import '../models/payment.dart';
 import 'api_client.dart';
+
+class CreateOrderResult {
+  const CreateOrderResult({
+    required this.order,
+    this.razorpay,
+  });
+
+  final Order order;
+  final RazorpayCheckoutDetails? razorpay;
+}
 
 class OrdersService {
   OrdersService(this._api);
@@ -14,11 +25,11 @@ class OrdersService {
         .toList();
   }
 
-  Future<Order> createOrder({
+  Future<CreateOrderResult> createOrder({
     required List<OrderItem> items,
     required num total,
     required PaymentMethod paymentMethod,
-    required PaymentStatus paymentStatus,
+    PaymentStatus? paymentStatus,
   }) async {
     final response = await _api.dio.post<Map<String, dynamic>>(
       '/orders',
@@ -26,11 +37,18 @@ class OrdersService {
         'items': items.map((e) => e.toJson()).toList(),
         'total': total,
         'paymentMethod': paymentMethod.apiValue,
-        'paymentStatus': paymentStatus.apiValue,
+        if (paymentStatus != null) 'paymentStatus': paymentStatus.apiValue,
       },
     );
-    final order = (response.data?['data'] as Map<String, dynamic>)['order'];
-    return Order.fromJson(order as Map<String, dynamic>);
+    final data = response.data?['data'] as Map<String, dynamic>? ?? {};
+    final order = Order.fromJson(data['order'] as Map<String, dynamic>);
+    final razorpayJson = data['razorpay'] as Map<String, dynamic>?;
+    return CreateOrderResult(
+      order: order,
+      razorpay: razorpayJson != null
+          ? RazorpayCheckoutDetails.fromJson(razorpayJson)
+          : null,
+    );
   }
 
   Future<List<Order>> fetchManagerOrders() async {

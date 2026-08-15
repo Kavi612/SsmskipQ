@@ -49,7 +49,10 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
       ),
       GoRoute(
         path: '/student/checkout',
-        builder: (_, __) => StudentCheckoutScreen(ordersService: services.ordersService),
+        builder: (_, __) => StudentCheckoutScreen(
+          ordersService: services.ordersService,
+          paymentService: services.paymentService,
+        ),
       ),
       GoRoute(
         path: '/student/order-confirmation',

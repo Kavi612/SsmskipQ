@@ -12,5 +12,5 @@ export const fetchMyOrders = async () => {
 
 export const createOrder = async (payload: CreateOrderPayload) => {
   const { data } = await api.post<OrderResponse>('/orders', payload);
-  return data.data.order;
+  return data.data;
 };

@@ -47,7 +47,7 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['GOOGLE_PAY', 'PHONEPE', 'PAY_AT_COUNTER'],
+      enum: ['GOOGLE_PAY', 'PHONEPE', 'PAY_AT_COUNTER', 'RAZORPAY'],
       required: [true, 'Payment method is required'],
     },
     paymentStatus: {
@@ -70,6 +70,14 @@ const orderSchema = new mongoose.Schema(
     tokenNumber: {
       type: String,
       required: [true, 'Token number is required'],
+      trim: true,
+    },
+    razorpayOrderId: {
+      type: String,
+      trim: true,
+    },
+    razorpayPaymentId: {
+      type: String,
       trim: true,
     },
   },

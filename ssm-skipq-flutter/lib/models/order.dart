@@ -1,4 +1,4 @@
-enum PaymentMethod { googlePay, phonePe, payAtCounter }
+enum PaymentMethod { razorpay, googlePay, phonePe, payAtCounter }
 
 enum PaymentStatus { pending, paid }
 
@@ -14,6 +14,8 @@ enum OrderStatus {
 extension PaymentMethodX on PaymentMethod {
   String get apiValue {
     switch (this) {
+      case PaymentMethod.razorpay:
+        return 'RAZORPAY';
       case PaymentMethod.googlePay:
         return 'GOOGLE_PAY';
       case PaymentMethod.phonePe:
@@ -25,6 +27,8 @@ extension PaymentMethodX on PaymentMethod {
 
   static PaymentMethod fromApi(String? value) {
     switch (value) {
+      case 'RAZORPAY':
+        return PaymentMethod.razorpay;
       case 'PHONEPE':
         return PaymentMethod.phonePe;
       case 'PAY_AT_COUNTER':
@@ -36,6 +40,8 @@ extension PaymentMethodX on PaymentMethod {
 
   String get label {
     switch (this) {
+      case PaymentMethod.razorpay:
+        return 'Paid Online (Razorpay)';
       case PaymentMethod.googlePay:
         return 'Google Pay (Mock)';
       case PaymentMethod.phonePe:
