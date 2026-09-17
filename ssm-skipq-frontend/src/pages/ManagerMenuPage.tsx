@@ -7,6 +7,9 @@ import {
   updateMenuItemPrice,
   toggleMenuItemAvailability,
   deleteMenuItem,
+  createCategory,
+  updateCategory,
+  deleteCategory,
 } from '../services/managerMenu';
 import type { Category, MenuItem } from '../types/menu';
 import { FoodCardSkeletonGrid } from '../components/FoodCardSkeleton';
@@ -14,6 +17,16 @@ import { EmptyState } from '../components/ui/UiStates';
 import styles from './ManagerMenuPage.module.css';
 
 const normalizeId = (id: unknown) => String(id ?? '');
+
+const categoryIcons = [
+  'restaurant',
+  'rice_bowl',
+  'fastfood',
+  'local_pizza',
+  'cake',
+  'icecream',
+  'bakery_dining',
+] as const;
 
 const resolveCategoryId = (item: MenuItem, categories: Category[]) => {
   const itemCat = normalizeId(item.categoryId);
@@ -48,6 +61,14 @@ const ManagerMenuPage = () => {
     isVeg: true,
   });
   const [editImage, setEditImage] = useState<File | null>(null);
+  const [categoryForm, setCategoryForm] = useState({
+    name: '',
+    icon: 'restaurant',
+    sortOrder: '0',
+  });
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -201,6 +222,60 @@ const ManagerMenuPage = () => {
     }
   };
 
+  const saveCategory = async (e: FormEvent) => {
+    e.preventDefault();
+    setFormLoading(true);
+    setError('');
+    try {
+      const payload = {
+        name: categoryForm.name.trim(),
+        icon: categoryForm.icon,
+        sortOrder: Number(categoryForm.sortOrder) || 0,
+      };
+      const category = editingCategoryId
+        ? await updateCategory(editingCategoryId, payload)
+        : await createCategory(payload);
+      setCategories((prev) => {
+        const next = editingCategoryId
+          ? prev.map((item) => (item._id === category._id ? category : item))
+          : [...prev, category];
+        return [...next].sort(
+          (a, b) =>
+            (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
+            a.name.localeCompare(b.name),
+        );
+      });
+      setForm((current) => ({
+        ...current,
+        categoryId: editingCategoryId ?? normalizeId(category._id),
+      }));
+      setCategoryForm({ name: '', icon: 'restaurant', sortOrder: '0' });
+      setEditingCategoryId(null);
+    } catch {
+      setError('Unable to save category.');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const startCategoryEdit = (category: Category) => {
+    setEditingCategoryId(category._id);
+    setCategoryForm({
+      name: category.name,
+      icon: category.icon ?? 'restaurant',
+      sortOrder: String(category.sortOrder ?? 0),
+    });
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      await deleteCategory(id);
+      setCategories((prev) => prev.filter((category) => category._id !== id));
+    } catch {
+      setError("Move or delete this category's menu items first.");
+    }
+  };
+
   const renderCategoryOptions = (placeholder: string) => {
     if (categories.length === 0) {
       return (
@@ -226,6 +301,109 @@ const ManagerMenuPage = () => {
 
   return (
     <div className={styles.page}>
+      <section className={styles.section}>
+        <div className={styles.categoryHeader}>
+          <div>
+            <h2 className={styles.sectionTitle}>Category Master</h2>
+            <p className={styles.sectionHint}>
+              Manage names, icons, and display order.
+            </p>
+          </div>
+        </div>
+        <form className={styles.categoryForm} onSubmit={saveCategory}>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Category name</span>
+            <input
+              className={styles.input}
+              value={categoryForm.name}
+              required
+              onChange={(e) =>
+                setCategoryForm({ ...categoryForm, name: e.target.value })
+              }
+            />
+          </label>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Icon</span>
+            <select
+              className={styles.select}
+              value={categoryForm.icon}
+              onChange={(e) =>
+                setCategoryForm({ ...categoryForm, icon: e.target.value })
+              }
+            >
+              {categoryIcons.map((icon) => (
+                <option key={icon} value={icon}>
+                  {icon}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Display order</span>
+            <input
+              className={styles.input}
+              type="number"
+              min="0"
+              value={categoryForm.sortOrder}
+              onChange={(e) =>
+                setCategoryForm({ ...categoryForm, sortOrder: e.target.value })
+              }
+            />
+          </label>
+          <button
+            className={styles.addBtn}
+            type="submit"
+            disabled={formLoading}
+          >
+            {editingCategoryId ? 'Update Category' : 'Add Category'}
+          </button>
+          {editingCategoryId && (
+            <button
+              className={styles.cancelBtn}
+              type="button"
+              onClick={() => {
+                setEditingCategoryId(null);
+                setCategoryForm({
+                  name: '',
+                  icon: 'restaurant',
+                  sortOrder: '0',
+                });
+              }}
+            >
+              Cancel
+            </button>
+          )}
+        </form>
+        <ul className={styles.categoryList}>
+          {categories.map((category) => (
+            <li key={category._id} className={styles.categoryRow}>
+              <span>
+                <strong>{category.name}</strong> ·{' '}
+                {category.icon ?? 'restaurant'} · order{' '}
+                {category.sortOrder ?? 0}
+              </span>
+              <span className={styles.categoryActions}>
+                <button
+                  type="button"
+                  className={styles.iconBtn}
+                  aria-label={`Edit ${category.name}`}
+                  onClick={() => startCategoryEdit(category)}
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
+                  type="button"
+                  className={styles.iconBtn}
+                  aria-label={`Delete ${category.name}`}
+                  onClick={() => handleDeleteCategory(category._id)}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Add New Item</h2>
         <p className={styles.sectionHint}>

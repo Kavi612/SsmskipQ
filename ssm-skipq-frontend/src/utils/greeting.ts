@@ -26,6 +26,19 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 export const getCategoryIcon = (name: string): LucideIcon =>
   CATEGORY_ICONS[name] ?? UtensilsCrossed;
 
+const CATEGORY_ICONS_BY_KEY: Record<string, LucideIcon> = {
+  restaurant: UtensilsCrossed,
+  rice_bowl: Wheat,
+  fastfood: UtensilsCrossed,
+  local_pizza: Pizza,
+  cake: Cake,
+  icecream: Cake,
+  bakery_dining: Leaf,
+};
+
+export const getCategoryIconByKey = (key?: string | null): LucideIcon =>
+  CATEGORY_ICONS_BY_KEY[key ?? ''] ?? UtensilsCrossed;
+
 export const getTimeGreeting = () => {
   const hour = Number(
     new Intl.DateTimeFormat('en-IN', {

@@ -29,6 +29,7 @@ class StudentCheckoutScreen extends StatefulWidget {
 class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
   PaymentMethod _method = PaymentMethod.razorpay;
   bool _processing = false;
+  bool _orderPlaced = false;
   bool _loadingConfig = true;
   String? _error;
   PaymentConfig? _paymentConfig;
@@ -81,6 +82,17 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
     });
 
     try {
+      final existingOrders = await widget.ordersService.fetchMyOrders();
+      final hasActiveOrder = existingOrders.any((order) =>
+        order.status != OrderStatus.pickedUp &&
+        order.status != OrderStatus.cancelled
+      );
+
+      if (hasActiveOrder) {
+        setState(() => _error = 'You already have an active order. Please complete it before placing a new one.');
+        return;
+      }
+
       final result = await widget.ordersService.createOrder(
         items: cart.items
             .map(
@@ -118,9 +130,13 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
         );
       }
 
-      cart.clear();
       if (mounted) {
-        context.go('/student/order-confirmation', extra: finalOrder);
+        setState(() => _orderPlaced = true);
+        cart.clear();
+        context.go(
+          '/student/track-order/${finalOrder.id}',
+          extra: finalOrder,
+        );
       }
     } catch (e) {
       setState(() {
@@ -139,9 +155,9 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
-    if (cart.items.isEmpty && !_processing) {
+    if (cart.items.isEmpty && !_processing && !_orderPlaced) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.go('/student/cart');
+        if (mounted) context.go('/student');
       });
     }
 
@@ -151,7 +167,7 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
     return AppScaffold(
       title: 'Checkout',
       showBack: true,
-      backTo: '/student/cart',
+      backTo: '/student?tab=cart',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

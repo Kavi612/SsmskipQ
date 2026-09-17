@@ -31,7 +31,7 @@ class ManagerProfileScreen extends StatelessWidget {
             child: OutlinedButton(
               onPressed: () async {
                 await auth.logout();
-                if (context.mounted) context.go('/manager/login');
+                if (context.mounted) context.go('/');
               },
               child: const Text('Logout'),
             ),

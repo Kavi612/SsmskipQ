@@ -1,13 +1,22 @@
 class Category {
-  const Category({required this.id, required this.name});
+  const Category({
+    required this.id,
+    required this.name,
+    this.icon = 'restaurant',
+    this.sortOrder = 0,
+  });
 
   final String id;
   final String name;
+  final String icon;
+  final int sortOrder;
 
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
+      icon: json['icon'] as String? ?? 'restaurant',
+      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
     );
   }
 }

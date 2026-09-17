@@ -29,7 +29,7 @@ class StudentProfileScreen extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: () async {
                   await auth.logout();
-                  if (context.mounted) context.go('/student/login');
+                  if (context.mounted) context.go('/');
                 },
                 child: const Text('Logout'),
               ),

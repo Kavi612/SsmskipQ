@@ -85,7 +85,8 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  String messageFromError(Object error, {String fallback = 'Something went wrong'}) {
+  String messageFromError(Object error,
+      {String fallback = 'Something went wrong'}) {
     if (error is DioException) {
       return _api.messageFromError(error, fallback: fallback);
     }

@@ -16,6 +16,7 @@ const STATUS_ACTION: Partial<Record<OrderStatus, string>> = {
   PENDING: 'Accept',
   CONFIRMED: 'Ready',
   PREPARING: 'Ready',
+  READY: 'Collected',
 };
 
 const paymentMethodLabel = (method: Order['paymentMethod']) => {

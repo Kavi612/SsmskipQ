@@ -16,12 +16,50 @@ const STATUS_FLOW = {
   PENDING: 'CONFIRMED',
   CONFIRMED: 'READY',
   PREPARING: 'READY',
+  READY: 'PICKED_UP',
 };
 
 const STATUS_ACTION_LABELS = {
   PENDING: 'Accept',
   CONFIRMED: 'Ready',
   PREPARING: 'Ready',
+  READY: 'Collected',
+};
+
+const getDateRange = (range, customStart, customEnd) => {
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+
+  let start = new Date(startOfToday);
+  let end = new Date(now);
+
+  switch (range) {
+    case 'week':
+      start.setDate(start.getDate() - 6);
+      break;
+    case 'month':
+      start.setMonth(start.getMonth() - 1);
+      break;
+    case 'year':
+      start.setFullYear(start.getFullYear() - 1);
+      break;
+    case 'custom':
+      if (customStart) {
+        start = new Date(customStart);
+      }
+      if (customEnd) {
+        end = new Date(customEnd);
+        end.setHours(23, 59, 59, 999);
+      }
+      break;
+    case 'day':
+    default:
+      start = new Date(startOfToday);
+      break;
+  }
+
+  return { start, end };
 };
 
 export const formatOrder = (order) => ({
@@ -307,6 +345,76 @@ export const getManagerOrders = async (_req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Unable to fetch orders',
+    });
+  }
+};
+
+export const getOrderAnalytics = async (req, res) => {
+  try {
+    const range = req.query.range || 'day';
+    const { start, end } = getDateRange(
+      Array.isArray(range) ? range[0] : range,
+      req.query.startDate,
+      req.query.endDate,
+    );
+
+    const orders = await Order.find({
+      createdAt: { $gte: start, $lte: end },
+    }).lean();
+
+    let totalRevenue = 0;
+    let completedOrders = 0;
+    const itemMap = new Map();
+
+    for (const order of orders) {
+      totalRevenue += Number(order.total || 0);
+      if (order.status === 'PICKED_UP') {
+        completedOrders += 1;
+      }
+
+      for (const item of order.items || []) {
+        const itemName = item.name || 'Unknown';
+        const current = itemMap.get(itemName) || {
+          name: itemName,
+          quantity: 0,
+          revenue: 0,
+        };
+
+        current.quantity += Number(item.quantity || 0);
+        current.revenue += Number((item.price || 0) * (item.quantity || 0));
+        itemMap.set(itemName, current);
+      }
+    }
+
+    const topItems = [...itemMap.values()]
+      .sort((a, b) => {
+        const quantityOrder = b.quantity - a.quantity;
+        if (quantityOrder !== 0) return quantityOrder;
+        return b.revenue - a.revenue;
+      })
+      .slice(0, 5)
+      .map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        revenue: Number(item.revenue.toFixed(2)),
+      }));
+
+    return res.json({
+      success: true,
+      data: {
+        analytics: {
+          totalOrders: orders.length,
+          totalRevenue: Number(totalRevenue.toFixed(2)),
+          completedOrders,
+          topItems,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Get order analytics error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to calculate analytics',
     });
   }
 };

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/theme.dart';
 import '../models/menu.dart';
 import '../providers/cart_provider.dart';
+import 'menu_item_image.dart';
 import 'package:provider/provider.dart';
 
 class FoodCard extends StatelessWidget {
@@ -32,17 +33,7 @@ class FoodCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 88,
-                height: 88,
-                color: AppTheme.bgSubtle,
-                child: item.imageUrl.isNotEmpty
-                    ? Image.network(item.imageUrl, fit: BoxFit.cover)
-                    : const Icon(Icons.restaurant, color: AppTheme.textMuted),
-              ),
-            ),
+            MenuItemImage(item: item),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

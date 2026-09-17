@@ -119,6 +119,8 @@ extension OrderStatusX on OrderStatus {
       case OrderStatus.confirmed:
       case OrderStatus.preparing:
         return 'Ready';
+      case OrderStatus.ready:
+        return 'Collected';
       default:
         return null;
     }

@@ -58,7 +58,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   List<MenuItem> get _filtered {
     var result = _items;
     if (_selectedCategoryId != null) {
-      result = result.where((e) => e.categoryId == _selectedCategoryId).toList();
+      result =
+          result.where((e) => e.categoryId == _selectedCategoryId).toList();
     }
     if (_vegFilter == VegFilter.veg) {
       result = result.where((e) => e.isVeg).toList();
@@ -134,26 +135,22 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 44,
+            height: 60,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: const Text('All'),
-                    selected: _selectedCategoryId == null,
-                    onSelected: (_) => setState(() => _selectedCategoryId = null),
-                  ),
+                _CategoryCard(
+                  name: 'All',
+                  icon: getCategoryIcon('All'),
+                  isSelected: _selectedCategoryId == null,
+                  onTap: () => setState(() => _selectedCategoryId = null),
                 ),
                 ..._categories.map(
-                  (cat) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(cat.name),
-                      selected: _selectedCategoryId == cat.id,
-                      onSelected: (_) => setState(() => _selectedCategoryId = cat.id),
-                    ),
+                  (cat) => _CategoryCard(
+                    name: cat.name,
+                    icon: _iconForCategory(cat.icon),
+                    isSelected: _selectedCategoryId == cat.id,
+                    onTap: () => setState(() => _selectedCategoryId = cat.id),
                   ),
                 ),
               ],
@@ -164,7 +161,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           if (_loading)
-            const Center(child: Padding(
+            const Center(
+                child: Padding(
               padding: EdgeInsets.all(24),
               child: CircularProgressIndicator(),
             ))
@@ -180,6 +178,74 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               (item) => FoodCard(item: item, orderingOpen: ordering.isOpen),
             ),
         ],
+      ),
+    );
+  }
+
+  IconData _iconForCategory(String? iconKey) {
+    switch (iconKey) {
+      case 'rice_bowl':
+        return Icons.rice_bowl;
+      case 'fastfood':
+        return Icons.fastfood;
+      case 'local_pizza':
+        return Icons.local_pizza;
+      case 'cake':
+        return Icons.cake;
+      case 'icecream':
+        return Icons.icecream;
+      case 'bakery_dining':
+        return Icons.bakery_dining;
+      case 'restaurant':
+        return Icons.restaurant;
+      default:
+        return Icons.restaurant;
+    }
+  }
+}
+
+class _CategoryCard extends StatelessWidget {
+  const _CategoryCard({
+    required this.name,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String name;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 70,
+        margin: const EdgeInsets.only(right: 12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
+              size: 20,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }

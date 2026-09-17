@@ -3,6 +3,7 @@ import {
   createOrder,
   getMyOrders,
   getManagerOrders,
+  getOrderAnalytics,
   advanceOrderStatus,
   updateOrderPayment,
 } from '../controllers/orderController.js';
@@ -30,6 +31,7 @@ router.post(
   submitOrderFeedback,
 );
 
+router.get('/analytics', authenticate, authorize('manager'), getOrderAnalytics);
 router.get('/manager', authenticate, authorize('manager'), getManagerOrders);
 router.patch(
   '/:id/status',

@@ -41,6 +41,7 @@ class AppTheme {
         error: error,
       ),
       scaffoldBackgroundColor: surface,
+      iconTheme: const IconThemeData(color: text),
       appBarTheme: AppBarTheme(
         backgroundColor: surface,
         foregroundColor: text,
@@ -107,6 +108,12 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surface,
         indicatorColor: primaryMuted,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: primary, size: 24);
+          }
+          return const IconThemeData(color: textSecondary, size: 24);
+        }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.sora(

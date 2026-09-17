@@ -3,30 +3,49 @@ import 'package:provider/provider.dart';
 
 import '../providers/cart_provider.dart';
 import '../providers/ordering_window_provider.dart';
+import '../services/feedback_service.dart';
 import '../services/menu_service.dart';
+import '../services/orders_service.dart';
+import '../services/socket_service.dart';
 import '../screens/student/student_cart_screen.dart';
 import '../screens/student/student_home_screen.dart';
+import '../screens/student/student_track_order_list_screen.dart';
 import '../screens/student/student_profile_screen.dart';
 
 class StudentShell extends StatefulWidget {
   const StudentShell({
     super.key,
     required this.menuService,
+    required this.ordersService,
+    required this.socketService,
+    this.initialTab = 0,
   });
 
   final MenuService menuService;
+  final OrdersService ordersService;
+  final SocketService socketService;
+  final int initialTab;
 
   @override
   State<StudentShell> createState() => _StudentShellState();
 }
 
 class _StudentShellState extends State<StudentShell> {
-  int _index = 0;
+  late int _index;
 
   @override
   void initState() {
     super.initState();
+    _index = widget.initialTab.clamp(0, 3);
     context.read<OrderingWindowProvider>().initialize();
+  }
+
+  @override
+  void didUpdateWidget(covariant StudentShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTab != widget.initialTab) {
+      _index = widget.initialTab.clamp(0, 3);
+    }
   }
 
   @override
@@ -35,6 +54,10 @@ class _StudentShellState extends State<StudentShell> {
     final tabs = [
       StudentHomeScreen(menuService: widget.menuService),
       const StudentCartScreen(),
+      StudentTrackOrderListScreen(
+        ordersService: widget.ordersService,
+        socketService: widget.socketService,
+      ),
       const StudentProfileScreen(),
     ];
 
@@ -54,13 +77,20 @@ class _StudentShellState extends State<StudentShell> {
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Badge(
-              isLabelVisible: cart.totalItems > 0,
-              label: Text('${cart.totalItems}'),
-              child: const Icon(Icons.shopping_cart_outlined),
+            icon: _CartNavigationIcon(
+              itemCount: cart.totalItems,
+              selected: false,
             ),
-            selectedIcon: const Icon(Icons.shopping_cart),
+            selectedIcon: _CartNavigationIcon(
+              itemCount: cart.totalItems,
+              selected: true,
+            ),
             label: 'Cart',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.list_alt_outlined),
+            selectedIcon: Icon(Icons.list_alt),
+            label: 'Track Order',
           ),
           const NavigationDestination(
             icon: Icon(Icons.person_outline),
@@ -68,6 +98,27 @@ class _StudentShellState extends State<StudentShell> {
             label: 'Profile',
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CartNavigationIcon extends StatelessWidget {
+  const _CartNavigationIcon({
+    required this.itemCount,
+    required this.selected,
+  });
+
+  final int itemCount;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Badge(
+      isLabelVisible: itemCount > 0,
+      label: Text(itemCount > 99 ? '99+' : '$itemCount'),
+      child: Icon(
+        selected ? Icons.shopping_cart : Icons.shopping_cart_outlined,
       ),
     );
   }

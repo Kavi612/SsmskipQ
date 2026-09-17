@@ -3,8 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
+import '../../models/menu.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/app_scaffold.dart';
+import '../../widgets/menu_item_image.dart';
 
 class StudentCartScreen extends StatelessWidget {
   const StudentCartScreen({super.key});
@@ -43,13 +45,26 @@ class StudentCartScreen extends StatelessWidget {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
-                    leading: item.imageUrl.isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(item.imageUrl,
-                                width: 48, height: 48, fit: BoxFit.cover),
-                          )
-                        : const Icon(Icons.restaurant),
+                    leading: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: MenuItemImage(
+                        item: MenuItem(
+                          id: item.menuItemId,
+                          name: item.name,
+                          description: '',
+                          price: item.price,
+                          categoryId: '',
+                          categoryName: '',
+                          imageUrl: item.imageUrl,
+                          isVeg: item.isVeg,
+                          available: item.available,
+                        ),
+                        width: 48,
+                        height: 48,
+                        borderRadius: 8,
+                      ),
+                    ),
                     title: Text(item.name),
                     subtitle: Text('₹${item.price} each'),
                     trailing: Row(

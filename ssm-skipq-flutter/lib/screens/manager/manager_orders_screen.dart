@@ -67,8 +67,8 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
     try {
       final updated = await widget.ordersService.advanceStatus(orderId);
       _upsertOrder(updated);
-    } catch (_) {
-      setState(() => _error = 'Unable to update order status.');
+    } catch (e) {
+      setState(() => _error = 'Unable to update order status: ${e.toString()}');
     } finally {
       setState(() => _actionLoadingId = null);
     }

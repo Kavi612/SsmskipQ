@@ -7,7 +7,7 @@ import type { Category, MenuItem, VegFilter } from '../types/menu';
 import FoodCard from '../components/FoodCard';
 import { FoodCardSkeletonGrid } from '../components/FoodCardSkeleton';
 import { EmptyState } from '../components/ui/UiStates';
-import { getCategoryIcon, getTimeGreeting } from '../utils/greeting';
+import { getCategoryIconByKey, getTimeGreeting } from '../utils/greeting';
 import styles from './StudentHomePage.module.css';
 
 const StudentHomePage = () => {
@@ -148,7 +148,7 @@ const StudentHomePage = () => {
           <span className={styles.categoryLabel}>All</span>
         </button>
         {categories.map((cat) => {
-          const Icon = getCategoryIcon(cat.name);
+          const Icon = getCategoryIconByKey(cat.icon);
           return (
             <button
               key={cat._id}

@@ -1,3 +1,4 @@
+import '../models/dashboard_analytics.dart';
 import '../models/order.dart';
 import '../models/payment.dart';
 import 'api_client.dart';
@@ -57,6 +58,25 @@ class OrdersService {
     return (data?['orders'] as List<dynamic>? ?? [])
         .map((e) => Order.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<DashboardAnalytics> fetchDashboardAnalytics({
+    required String range,
+    String? startDate,
+    String? endDate,
+  }) async {
+    final response = await _api.dio.get<Map<String, dynamic>>(
+      '/orders/analytics',
+      queryParameters: {
+        'range': range,
+        if (startDate != null) 'startDate': startDate,
+        if (endDate != null) 'endDate': endDate,
+      },
+    );
+
+    final data = response.data?['data'] as Map<String, dynamic>? ?? {};
+    final analytics = data['analytics'] as Map<String, dynamic>? ?? {};
+    return DashboardAnalytics.fromJson(analytics);
   }
 
   Future<Order> advanceStatus(String orderId) async {
