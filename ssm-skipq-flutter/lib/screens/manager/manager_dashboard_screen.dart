@@ -192,27 +192,31 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                 children: [
                   const Text('Analytics', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: ['day', 'week', 'month', 'year', 'custom']
-                        .map(
-                          (option) => ChoiceChip(
-                            label: Text(_formatRangeLabel(option)),
-                            selected: _range == option,
-                            onSelected: (_) {
-                              setState(() {
-                                _range = option;
-                                if (option != 'custom') {
-                                  _customStartDate = null;
-                                  _customEndDate = null;
-                                }
-                              });
-                              _loadAnalytics();
-                            },
-                          ),
-                        )
-                        .toList(),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: ['day', 'week', 'month', 'year', 'custom']
+                          .map(
+                            (option) => Padding(
+                              padding: const EdgeInsets.only(right: 10),
+                              child: ChoiceChip(
+                                label: Text(_formatRangeLabel(option)),
+                                selected: _range == option,
+                                onSelected: (_) {
+                                  setState(() {
+                                    _range = option;
+                                    if (option != 'custom') {
+                                      _customStartDate = null;
+                                      _customEndDate = null;
+                                    }
+                                  });
+                                  _loadAnalytics();
+                                },
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
                   ),
                   if (_range == 'custom') ...[
                     const SizedBox(height: 12),
@@ -261,17 +265,16 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                     const Center(child: CircularProgressIndicator())
                   else ...[
                     GridView.count(
-                      crossAxisCount: 2,
+                      crossAxisCount: 3,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 1.8,
+                      childAspectRatio: 1.35,
                       children: [
                         _analyticsStatCard('Orders', '${_analytics.totalOrders}'),
                         _analyticsStatCard('Revenue', '₹${_analytics.totalRevenue}', highlight: true),
                         _analyticsStatCard('Completed', '${_analytics.completedOrders}'),
-                        _analyticsStatCard('Best Sellers', '${_analytics.topItems.length}'),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -284,20 +287,55 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                         (entry) {
                           final index = entry.key;
                           final item = entry.value;
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            dense: true,
-                            visualDensity: VisualDensity.compact,
-                            leading: CircleAvatar(
-                              radius: 14,
-                              backgroundColor: AppTheme.primaryMuted,
-                              child: Text('${index + 1}', style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w700)),
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
                             ),
-                            title: Text(item.name),
-                            subtitle: Text('${item.quantity} sold'),
-                            trailing: Text(
-                              '₹${item.revenue}',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            decoration: BoxDecoration(
+                              color: AppTheme.bgSubtle,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 28,
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: const TextStyle(
+                                      color: AppTheme.primary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    item.name,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 72,
+                                  child: Text(
+                                    '${item.quantity} sold',
+                                    textAlign: TextAlign.right,
+                                    style: const TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 76,
+                                  child: Text(
+                                    '₹${item.revenue}',
+                                    textAlign: TextAlign.right,
+                                    style: const TextStyle(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ],
                             ),
                           );
                         },

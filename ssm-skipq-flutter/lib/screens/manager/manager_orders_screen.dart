@@ -27,6 +27,7 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
   bool _loading = true;
   String? _error;
   String? _actionLoadingId;
+  String _range = 'today';
 
   @override
   void initState() {
@@ -93,11 +94,24 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
+  List<Order> get _filteredOrders {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = switch (_range) {
+      'week' => today.subtract(Duration(days: today.weekday - 1)),
+      'month' => DateTime(today.year, today.month),
+      'year' => DateTime(today.year),
+      _ => today,
+    };
+    return _orders
+        .where((order) => !order.createdAt.isBefore(start))
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final todayOrders =
-        _orders.where((o) => isTodayIst(o.createdAt)).toList();
-    final active = todayOrders
+    final visibleOrders = _filteredOrders;
+    final active = visibleOrders
         .where((o) =>
             o.status != OrderStatus.pickedUp && o.status != OrderStatus.cancelled)
         .length;
@@ -107,7 +121,26 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('$active active · ${todayOrders.length} today'),
+          Text('${_rangeLabel(_range)} · $active active · ${visibleOrders.length} orders'),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ['today', 'week', 'month', 'year']
+                  .map(
+                    (range) => Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: ChoiceChip(
+                        label: Text(_rangeLabel(range)),
+                        selected: _range == range,
+                        onSelected: (_) => setState(() => _range = range),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
           if (_loading)
             const Padding(
               padding: EdgeInsets.all(24),
@@ -115,13 +148,13 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
             )
           else if (_error != null)
             Text(_error!, style: const TextStyle(color: AppTheme.error))
-          else if (todayOrders.isEmpty)
+          else if (visibleOrders.isEmpty)
             const Padding(
               padding: EdgeInsets.all(24),
-              child: Text('No orders yet today. New orders appear instantly.'),
+              child: Text('No orders found for this date range.'),
             )
           else
-            ...todayOrders.map((order) {
+            ...visibleOrders.map((order) {
               final action = order.status.managerAction;
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -138,6 +171,11 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
                                   fontSize: 20, fontWeight: FontWeight.w800)),
                           OrderStatusBadge(status: order.status),
                         ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        formatIstDateTime(order.createdAt),
+                        style: const TextStyle(color: AppTheme.textSecondary),
                       ),
                       const SizedBox(height: 8),
                       ...order.items.map((item) => Text('${item.name} × ${item.quantity}')),
@@ -168,9 +206,9 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
                             ),
                           if (order.paymentMethod == PaymentMethod.payAtCounter &&
                               order.paymentStatus == PaymentStatus.paid)
-                            OutlinedButton(
+                            const OutlinedButton(
                               onPressed: null,
-                              child: const Text('Payment Received ✓'),
+                              child: Text('Payment Received ✓'),
                             ),
                           if (order.student != null)
                             OutlinedButton.icon(
@@ -188,5 +226,18 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
         ],
       ),
     );
+  }
+
+  String _rangeLabel(String range) {
+    switch (range) {
+      case 'week':
+        return 'This Week';
+      case 'month':
+        return 'This Month';
+      case 'year':
+        return 'This Year';
+      default:
+        return 'Today';
+    }
   }
 }

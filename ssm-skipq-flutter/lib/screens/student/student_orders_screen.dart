@@ -177,14 +177,24 @@ class _StudentOrdersScreenState extends State<StudentOrdersScreen> {
                                         orderId: order.id,
                                         tokenNumber: order.tokenNumber,
                                         feedbackService: widget.feedbackService,
-                                        onSubmitted: () {
+                                        onSubmitted: (feedback) {
                                           setState(() {
                                             _submittedFeedback.add(order.id);
                                             _orders[index] =
-                                                order.copyWith(hasFeedback: true);
+                                                order.copyWith(
+                                                  hasFeedback: true,
+                                                  feedback: SubmittedFeedback(
+                                                    rating: feedback.rating,
+                                                    review: feedback.review,
+                                                  ),
+                                                );
                                           });
                                         },
                                       ),
+                                    ] else if (order.status == OrderStatus.pickedUp &&
+                                        (order.hasFeedback || order.feedback != null)) ...[
+                                      const SizedBox(height: 12),
+                                      _FeedbackConfirmation(feedback: order.feedback),
                                     ],
                                   ],
                                 ),
@@ -194,6 +204,49 @@ class _StudentOrdersScreenState extends State<StudentOrdersScreen> {
                         },
                       ),
                     ),
+    );
+  }
+}
+
+class _FeedbackConfirmation extends StatelessWidget {
+  const _FeedbackConfirmation({required this.feedback});
+
+  final SubmittedFeedback? feedback;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.bgSubtle,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Thanks for your feedback!',
+              style: TextStyle(fontWeight: FontWeight.w700)),
+          if (feedback != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: List.generate(
+                5,
+                (index) => Icon(
+                  index < feedback!.rating ? Icons.star : Icons.star_border,
+                  color: AppTheme.primary,
+                  size: 18,
+                ),
+              ),
+            ),
+            if (feedback!.review.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(feedback!.review),
+            ],
+          ],
+        ],
+      ),
     );
   }
 }

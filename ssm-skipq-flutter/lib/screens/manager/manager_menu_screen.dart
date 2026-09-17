@@ -56,6 +56,10 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
 
   Future<void> _createItem() async {
     if (_categoryId == null) return;
+    if (_categories.isEmpty) {
+      setState(() => _error = 'Please create a category before adding menu items.');
+      return;
+    }
     setState(() => _formLoading = true);
     try {
       final form = FormData.fromMap({
@@ -106,11 +110,13 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                 controller: nameController,
                 decoration: const InputDecoration(labelText: 'Name'),
               ),
+              const SizedBox(height: 16),
               TextField(
                 controller: orderController,
                 decoration: const InputDecoration(labelText: 'Display order'),
                 keyboardType: TextInputType.number,
               ),
+              const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 initialValue: icon,
                 decoration: const InputDecoration(labelText: 'Icon'),
@@ -133,9 +139,13 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
             ],
           ),
           actions: [
-            TextButton(
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel')),
+                child: const Text('Cancel'),
+              ),
+            ),
             ElevatedButton(
               onPressed: () async {
                 final name = nameController.text.trim();
@@ -198,6 +208,103 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
   }
 
   IconData _categoryIcon(String key) => CategoryIcons.resolve(key);
+
+  Future<void> _openCategoryItems(Category category) async {
+    setState(() => _categoryId = category.id);
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _CategoryItemsPage(
+          category: category,
+          items: _items.where((item) => item.categoryId == category.id).toList(),
+          onAddItem: () => _showAddItemDialog(category),
+          onEditCategory: () => _showCategoryDialog(category: category),
+          onDeleteCategory: () async {
+            await _deleteCategory(category);
+            if (mounted) Navigator.pop(context);
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<MenuItem?> _showAddItemDialog(Category category) async {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final priceController = TextEditingController();
+    var isVeg = true;
+    try {
+      return await showDialog<MenuItem>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text('Add Menu Item to ${category.name}'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Name'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: descriptionController,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: priceController,
+                    decoration: const InputDecoration(labelText: 'Price'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Vegetarian'),
+                    value: isVeg,
+                    onChanged: (value) => setDialogState(() => isVeg = value),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final name = nameController.text.trim();
+                  final price = num.tryParse(priceController.text.trim());
+                  if (name.isEmpty || price == null || price < 0) return;
+                  try {
+                    final item = await widget.menuService.createMenuItem(
+                      FormData.fromMap({
+                        'name': name,
+                        'description': descriptionController.text.trim(),
+                        'price': price,
+                        'categoryId': category.id,
+                        'isVeg': isVeg.toString(),
+                      }),
+                    );
+                    if (dialogContext.mounted) Navigator.pop(dialogContext);
+                    if (mounted) setState(() => _items = [..._items, item]);
+                  } catch (_) {
+                    if (mounted) setState(() => _error = 'Unable to create menu item.');
+                  }
+                },
+                child: const Text('Add Item'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      nameController.dispose();
+      descriptionController.dispose();
+      priceController.dispose();
+    }
+  }
 
   Future<void> _toggleAvailability(MenuItem item) async {
     try {
@@ -268,31 +375,53 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
           if (_categories.isEmpty)
             const Text('Create a category before adding menu items.')
           else
-            ..._categories.map(
-              (category) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                selected: _categoryId == category.id,
-                selectedTileColor: AppTheme.primaryMuted,
-                onTap: () => setState(() => _categoryId = category.id),
-                leading:
-                    Icon(_categoryIcon(category.icon), color: AppTheme.primary),
-                title: Text(category.name),
-                subtitle: Text('Order ${category.sortOrder}'),
-                trailing: Wrap(
-                  children: [
-                    IconButton(
-                      tooltip: 'Edit category',
-                      onPressed: () => _showCategoryDialog(category: category),
-                      icon: const Icon(Icons.edit_outlined),
+            SizedBox(
+              height: 112,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _categories.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final category = _categories[index];
+                  final selected = _categoryId == category.id;
+                  return SizedBox(
+                    width: 120,
+                    child: Card(
+                      margin: EdgeInsets.zero,
+                      elevation: 0,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: selected ? AppTheme.primary : AppTheme.border,
+                          width: selected ? 2 : 1,
+                        ),
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => _openCategoryItems(category),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(_categoryIcon(category.icon),
+                                color: AppTheme.primary, size: 24),
+                              const SizedBox(height: 8),
+                            Text(
+                              category.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    IconButton(
-                      tooltip: 'Delete category',
-                      onPressed: () => _deleteCategory(category),
-                      icon: const Icon(Icons.delete_outline,
-                          color: AppTheme.error),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           const Divider(height: 24),
@@ -429,6 +558,97 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                 ),
               );
             }),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryItemsPage extends StatelessWidget {
+  const _CategoryItemsPage({
+    required this.category,
+    required this.items,
+    required this.onAddItem,
+    required this.onEditCategory,
+    required this.onDeleteCategory,
+  });
+
+  final Category category;
+  final List<MenuItem> items;
+  final Future<MenuItem?> Function() onAddItem;
+  final VoidCallback onEditCategory;
+  final Future<void> Function() onDeleteCategory;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(category.name)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${items.length} item${items.length == 1 ? '' : 's'}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await onAddItem();
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add Item'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (items.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('No items in this category yet.'),
+            )
+          else
+            ...items.map(
+              (item) => Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(12),
+                  leading: item.imageUrl.isEmpty
+                      ? const Icon(Icons.restaurant, size: 42)
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            item.imageUrl,
+                            width: 52,
+                            height: 52,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                  title: Text(item.name),
+                  subtitle: Text(item.isVeg ? 'Veg' : 'Non-Veg'),
+                  trailing: Text(
+                    '₹${item.price}',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            onPressed: onEditCategory,
+            icon: const Icon(Icons.edit_outlined),
+            label: const Text('Edit Category'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: onDeleteCategory,
+            icon: const Icon(Icons.delete_outline, color: AppTheme.error),
+            label: const Text('Delete Category'),
+          ),
         ],
       ),
     );

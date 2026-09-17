@@ -285,11 +285,14 @@ export const getMyOrders = async (req, res) => {
       Order.find({ studentId })
         .sort({ createdAt: -1 })
         .lean(),
-      Feedback.find({ studentId }).select('orderId').lean(),
+      Feedback.find({ studentId }).select('orderId rating review').lean(),
     ]);
 
     const feedbackOrderIds = new Set(
       feedbackRows.map((row) => row.orderId.toString()),
+    );
+    const feedbackByOrderId = new Map(
+      feedbackRows.map((row) => [row.orderId.toString(), row]),
     );
 
     return res.json({
@@ -306,6 +309,12 @@ export const getMyOrders = async (req, res) => {
           tokenNumber: order.tokenNumber,
           createdAt: order.createdAt,
           hasFeedback: feedbackOrderIds.has(order._id.toString()),
+          feedback: feedbackByOrderId.has(order._id.toString())
+            ? {
+                rating: feedbackByOrderId.get(order._id.toString()).rating,
+                review: feedbackByOrderId.get(order._id.toString()).review ?? '',
+              }
+            : null,
         })),
       },
     });
@@ -336,10 +345,26 @@ export const getMyOrderById = async (req, res) => {
       orderId: order._id,
       studentId: req.user.id,
     });
+    const feedback = hasFeedback
+      ? await Feedback.findOne({
+          orderId: order._id,
+          studentId: req.user.id,
+        })
+          .select('rating review')
+          .lean()
+      : null;
 
     return res.json({
       success: true,
-      data: { order: { ...formatOrder(order), hasFeedback: Boolean(hasFeedback) } },
+      data: {
+        order: {
+          ...formatOrder(order),
+          hasFeedback: Boolean(hasFeedback),
+          feedback: feedback
+            ? { rating: feedback.rating, review: feedback.review ?? '' }
+            : null,
+        },
+      },
     });
   } catch (error) {
     if (error instanceof mongoose.Error.CastError) {
@@ -359,9 +384,7 @@ export const getMyOrderById = async (req, res) => {
 
 export const getManagerOrders = async (_req, res) => {
   try {
-    const todayStart = getTodayStartIst();
-
-    const orders = await Order.find({ createdAt: { $gte: todayStart } })
+    const orders = await Order.find()
       .populate('studentId', 'name mobile')
       .sort({ createdAt: -1 })
       .lean();

@@ -184,6 +184,7 @@ class Order {
     required this.createdAt,
     this.student,
     this.hasFeedback = false,
+    this.feedback,
   });
 
   final String id;
@@ -197,6 +198,7 @@ class Order {
   final DateTime createdAt;
   final OrderStudent? student;
   final bool hasFeedback;
+  final SubmittedFeedback? feedback;
 
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
@@ -216,6 +218,9 @@ class Order {
           ? OrderStudent.fromJson(json['student'] as Map<String, dynamic>)
           : null,
       hasFeedback: json['hasFeedback'] as bool? ?? false,
+        feedback: json['feedback'] != null
+          ? SubmittedFeedback.fromJson(json['feedback'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -223,6 +228,7 @@ class Order {
     OrderStatus? status,
     PaymentStatus? paymentStatus,
     bool? hasFeedback,
+    SubmittedFeedback? feedback,
   }) {
     return Order(
       id: id,
@@ -236,6 +242,21 @@ class Order {
       createdAt: createdAt,
       student: student,
       hasFeedback: hasFeedback ?? this.hasFeedback,
+      feedback: feedback ?? this.feedback,
+    );
+  }
+}
+
+class SubmittedFeedback {
+  const SubmittedFeedback({required this.rating, required this.review});
+
+  final int rating;
+  final String review;
+
+  factory SubmittedFeedback.fromJson(Map<String, dynamic> json) {
+    return SubmittedFeedback(
+      rating: (json['rating'] as num?)?.toInt() ?? 0,
+      review: json['review'] as String? ?? '',
     );
   }
 }
