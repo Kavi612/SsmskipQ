@@ -48,6 +48,27 @@ class AuthService {
     return AppUser.fromJson(user);
   }
 
+  Future<StudentUser> updateStudentProfile({
+    required String registerNumber,
+    required String department,
+    required String academicStream,
+  }) async {
+    final response = await _api.dio.patch<Map<String, dynamic>>(
+      '/auth/student-profile',
+      data: {
+        'registerNumber': registerNumber,
+        'department': department,
+        'academicStream': academicStream,
+      },
+    );
+    final data = response.data?['data'] as Map<String, dynamic>?;
+    final user = data?['user'] as Map<String, dynamic>?;
+    if (user == null) {
+      throw DioException(requestOptions: response.requestOptions);
+    }
+    return AppUser.fromJson(user) as StudentUser;
+  }
+
   AuthResult _parseAuth(Map<String, dynamic>? json) {
     if (json == null || json['success'] != true) {
       throw Exception(json?['message'] ?? 'Authentication failed');

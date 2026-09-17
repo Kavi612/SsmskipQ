@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/cart_provider.dart';
@@ -6,10 +7,12 @@ import '../providers/ordering_window_provider.dart';
 import '../services/menu_service.dart';
 import '../services/orders_service.dart';
 import '../services/socket_service.dart';
-import '../screens/student/student_cart_screen.dart';
+import '../services/feedback_service.dart';
 import '../screens/student/student_home_screen.dart';
+import '../screens/student/student_orders_screen.dart';
 import '../screens/student/student_track_order_list_screen.dart';
 import '../screens/student/student_profile_screen.dart';
+import 'student_bottom_navigation_bar.dart';
 
 class StudentShell extends StatefulWidget {
   const StudentShell({
@@ -17,12 +20,14 @@ class StudentShell extends StatefulWidget {
     required this.menuService,
     required this.ordersService,
     required this.socketService,
+    required this.feedbackService,
     this.initialTab = 0,
   });
 
   final MenuService menuService;
   final OrdersService ordersService;
   final SocketService socketService;
+  final FeedbackService feedbackService;
   final int initialTab;
 
   @override
@@ -31,7 +36,7 @@ class StudentShell extends StatefulWidget {
 
 class _StudentShellState extends State<StudentShell> {
   late int _index;
-  int _homeRefreshToken = 0;
+  final int _homeRefreshToken = 0;
 
   @override
   void initState() {
@@ -56,7 +61,12 @@ class _StudentShellState extends State<StudentShell> {
         menuService: widget.menuService,
         refreshToken: _homeRefreshToken,
       ),
-      const StudentCartScreen(),
+      StudentOrdersScreen(
+        ordersService: widget.ordersService,
+        menuService: widget.menuService,
+        feedbackService: widget.feedbackService,
+        socketService: widget.socketService,
+      ),
       StudentTrackOrderListScreen(
         ordersService: widget.ordersService,
         socketService: widget.socketService,
@@ -68,43 +78,19 @@ class _StudentShellState extends State<StudentShell> {
       appBar: AppBar(
         title: const Text('SkipQ · Pre-Order · Pick Up'),
         centerTitle: true,
-      ),
-      body: IndexedStack(index: _index, children: tabs),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() {
-          _index = i;
-          if (i == 0) _homeRefreshToken++;
-        }),
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
+        actions: [
+          IconButton(
+            tooltip: 'Cart',
+            onPressed: () => context.push('/student/cart'),
             icon: _CartNavigationIcon(
               itemCount: cart.totalItems,
               selected: false,
             ),
-            selectedIcon: _CartNavigationIcon(
-              itemCount: cart.totalItems,
-              selected: true,
-            ),
-            label: 'Cart',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.list_alt_outlined),
-            selectedIcon: Icon(Icons.list_alt),
-            label: 'Track Order',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
           ),
         ],
       ),
+      body: IndexedStack(index: _index, children: tabs),
+      bottomNavigationBar: StudentBottomNavigationBar(selectedIndex: _index),
     );
   }
 }

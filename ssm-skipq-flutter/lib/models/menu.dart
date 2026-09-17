@@ -58,5 +58,3 @@ class MenuItem {
     );
   }
 }
-
-enum VegFilter { all, veg, nonveg }

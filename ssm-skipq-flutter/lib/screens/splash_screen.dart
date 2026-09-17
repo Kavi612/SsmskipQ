@@ -16,9 +16,12 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+  with TickerProviderStateMixin {
   bool _showAuth = false;
   late final AnimationController _heroController;
+  late final AnimationController _entranceController;
+  late final Animation<double> _entranceOpacity;
+  late final Animation<double> _entranceScale;
 
   @override
   void initState() {
@@ -28,6 +31,18 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 5500),
     )..repeat(reverse: true);
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _entranceOpacity = CurvedAnimation(
+      parent: _entranceController,
+      curve: Curves.easeOut,
+    );
+    _entranceScale = Tween<double>(begin: 0.92, end: 1).animate(
+      CurvedAnimation(parent: _entranceController, curve: Curves.easeOutBack),
+    );
+    _entranceController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
@@ -43,6 +58,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void dispose() {
     _heroController.dispose();
+    _entranceController.dispose();
     super.dispose();
   }
 
@@ -85,20 +101,20 @@ class _SplashScreenState extends State<SplashScreen>
                           child: child,
                         );
                       },
-                      child: SizedBox(
-                        width: heroWidth,
-                        child: ColorFiltered(
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
-                            BlendMode.screen,
-                          ),
-                          child: Image.asset(
-                            AppAssets.splashHero,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => Icon(
-                              Icons.restaurant_menu,
-                              size: heroWidth * 0.5,
-                              color: Colors.white.withValues(alpha: 0.9),
+                      child: FadeTransition(
+                        opacity: _entranceOpacity,
+                        child: ScaleTransition(
+                          scale: _entranceScale,
+                          child: SizedBox(
+                            width: heroWidth,
+                            child: Image.asset(
+                              AppAssets.splashHero,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => Icon(
+                                Icons.restaurant_menu,
+                                size: heroWidth * 0.5,
+                                color: Colors.white.withValues(alpha: 0.9),
+                              ),
                             ),
                           ),
                         ),

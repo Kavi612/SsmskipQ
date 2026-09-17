@@ -266,12 +266,12 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 1.4,
+                      childAspectRatio: 1.8,
                       children: [
-                        _statCard('Total Orders', '${_analytics.totalOrders}'),
-                        _statCard('Revenue', '₹${_analytics.totalRevenue}', highlight: true),
-                        _statCard('Completed', '${_analytics.completedOrders} / ${_analytics.totalOrders}'),
-                        _statCard('Best Sellers', '${_analytics.topItems.length}'),
+                        _analyticsStatCard('Orders', '${_analytics.totalOrders}'),
+                        _analyticsStatCard('Revenue', '₹${_analytics.totalRevenue}', highlight: true),
+                        _analyticsStatCard('Completed', '${_analytics.completedOrders}'),
+                        _analyticsStatCard('Best Sellers', '${_analytics.topItems.length}'),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -286,6 +286,8 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                           final item = entry.value;
                           return ListTile(
                             contentPadding: EdgeInsets.zero,
+                            dense: true,
+                            visualDensity: VisualDensity.compact,
                             leading: CircleAvatar(
                               radius: 14,
                               backgroundColor: AppTheme.primaryMuted,
@@ -293,7 +295,10 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                             ),
                             title: Text(item.name),
                             subtitle: Text('${item.quantity} sold'),
-                            trailing: Text('₹${item.revenue}'),
+                            trailing: Text(
+                              '₹${item.revenue}',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
                           );
                         },
                       ),
@@ -404,6 +409,26 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         children: [
           Text(label, style: const TextStyle(color: AppTheme.textSecondary)),
           Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+
+  Widget _analyticsStatCard(String label, String value, {bool highlight = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: highlight ? AppTheme.primaryMuted : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         ],
       ),
     );

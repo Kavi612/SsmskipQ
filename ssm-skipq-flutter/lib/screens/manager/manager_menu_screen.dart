@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../config/theme.dart';
 import '../../models/menu.dart';
 import '../../services/menu_service.dart';
+import '../../utils/category_icons.dart';
 
 class ManagerMenuScreen extends StatefulWidget {
   const ManagerMenuScreen({super.key, required this.menuService});
@@ -28,15 +29,7 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
   bool _isVeg = true;
   XFile? _pickedImage;
   bool _formLoading = false;
-  static const _categoryIcons = <String, IconData>{
-    'restaurant': Icons.restaurant,
-    'rice_bowl': Icons.rice_bowl,
-    'fastfood': Icons.fastfood,
-    'local_pizza': Icons.local_pizza,
-    'cake': Icons.cake,
-    'icecream': Icons.icecream,
-    'bakery_dining': Icons.bakery_dining,
-  };
+  static const _categoryIcons = CategoryIcons.byKey;
 
   @override
   void initState() {
@@ -87,6 +80,11 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
     } finally {
       setState(() => _formLoading = false);
     }
+  }
+
+  List<MenuItem> get _visibleItems {
+    if (_categoryId == null) return _items;
+    return _items.where((item) => item.categoryId == _categoryId).toList();
   }
 
   Future<void> _showCategoryDialog({Category? category}) async {
@@ -199,7 +197,7 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
     }
   }
 
-  IconData _categoryIcon(String key) => _categoryIcons[key] ?? Icons.restaurant;
+  IconData _categoryIcon(String key) => CategoryIcons.resolve(key);
 
   Future<void> _toggleAvailability(MenuItem item) async {
     try {
@@ -257,19 +255,15 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text('Category Master',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-              ),
-              IconButton(
-                tooltip: 'Add category',
-                onPressed: () => _showCategoryDialog(),
-                icon: const Icon(Icons.add),
-              ),
-            ],
+          const Text('Category Master',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+          const SizedBox(height: 4),
+          const Text('Select a category to manage its menu items.'),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => _showCategoryDialog(),
+            icon: const Icon(Icons.add_circle_outline),
+            label: const Text('New Category'),
           ),
           if (_categories.isEmpty)
             const Text('Create a category before adding menu items.')
@@ -277,6 +271,9 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
             ..._categories.map(
               (category) => ListTile(
                 contentPadding: EdgeInsets.zero,
+                selected: _categoryId == category.id,
+                selectedTileColor: AppTheme.primaryMuted,
+                onTap: () => setState(() => _categoryId = category.id),
                 leading:
                     Icon(_categoryIcon(category.icon), color: AppTheme.primary),
                 title: Text(category.name),
@@ -299,41 +296,65 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
               ),
             ),
           const Divider(height: 24),
-          const Text('Add Menu Item',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-          TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name')),
-          TextField(
-              controller: _descController,
-              decoration: const InputDecoration(labelText: 'Description')),
-          TextField(
-            controller: _priceController,
-            decoration: const InputDecoration(labelText: 'Price'),
-            keyboardType: TextInputType.number,
-          ),
-          DropdownButtonFormField<String>(
-            initialValue: _categoryId,
-            decoration: const InputDecoration(labelText: 'Category'),
-            items: _categories
-                .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-                .toList(),
-            onChanged: (v) => setState(() => _categoryId = v),
-          ),
-          SwitchListTile(
-            title: const Text('Vegetarian'),
-            value: _isVeg,
-            onChanged: (v) => setState(() => _isVeg = v),
-          ),
-          OutlinedButton.icon(
-            onPressed: _pickImage,
-            icon: const Icon(Icons.image),
-            label: Text(_pickedImage == null ? 'Pick image' : 'Image selected'),
-          ),
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: _formLoading ? null : _createItem,
-            child: Text(_formLoading ? 'Saving…' : 'Add Item'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Add Menu Item',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+                  const SizedBox(height: 4),
+                  Text(
+                    _categoryId == null
+                        ? 'Select a category above to add an item to it.'
+                        : 'Adding to: ${_categories.firstWhere((category) => category.id == _categoryId).name}',
+                    style: const TextStyle(color: AppTheme.textSecondary),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _nameController,
+                    enabled: _categoryId != null && !_formLoading,
+                    decoration: const InputDecoration(labelText: 'Name'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _descController,
+                    enabled: _categoryId != null && !_formLoading,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _priceController,
+                    enabled: _categoryId != null && !_formLoading,
+                    decoration: const InputDecoration(labelText: 'Price'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 4),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Vegetarian'),
+                    value: _isVeg,
+                    onChanged: _categoryId == null || _formLoading
+                        ? null
+                        : (v) => setState(() => _isVeg = v),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _categoryId == null || _formLoading ? null : _pickImage,
+                    icon: const Icon(Icons.image),
+                    label: Text(_pickedImage == null ? 'Pick image' : 'Image selected'),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _categoryId == null || _formLoading ? null : _createItem,
+                      child: Text(_formLoading ? 'Saving…' : 'Add Item'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
           const Divider(height: 32),
           const Text('Menu Items',
@@ -346,7 +367,7 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
           else if (_error != null)
             Text(_error!, style: const TextStyle(color: AppTheme.error))
           else
-            ..._items.map((item) {
+            ..._visibleItems.map((item) {
               final priceController =
                   TextEditingController(text: '${item.price}');
               return Card(

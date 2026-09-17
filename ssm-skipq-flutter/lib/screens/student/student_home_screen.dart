@@ -7,6 +7,7 @@ import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/ordering_window_provider.dart';
 import '../../services/menu_service.dart';
+import '../../utils/category_icons.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/food_card.dart';
 
@@ -30,7 +31,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
   List<MenuItem> _items = [];
   String? _selectedCategoryId;
   String _search = '';
-  VegFilter _vegFilter = VegFilter.all;
+  bool _showVegOnly = false;
   bool _loading = true;
   String? _error;
 
@@ -89,10 +90,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
       result =
           result.where((e) => e.categoryId == _selectedCategoryId).toList();
     }
-    if (_vegFilter == VegFilter.veg) {
+    if (_showVegOnly) {
       result = result.where((e) => e.isVeg).toList();
-    } else if (_vegFilter == VegFilter.nonveg) {
-      result = result.where((e) => !e.isVeg).toList();
     }
     final q = _search.trim().toLowerCase();
     if (q.isNotEmpty) {
@@ -119,7 +118,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            '${timeGreeting()}, $firstName 👋',
+            '${timeGreeting()}, $firstName',
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
           ),
           const Text('What would you like to order today?',
@@ -146,20 +145,32 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
             onChanged: (v) => setState(() => _search = v),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            children: VegFilter.values.map((f) {
-              final label = f == VegFilter.all
-                  ? 'All'
-                  : f == VegFilter.veg
-                      ? 'Veg'
-                      : 'Non-Veg';
-              return ChoiceChip(
-                label: Text(label),
-                selected: _vegFilter == f,
-                onSelected: (_) => setState(() => _vegFilter = f),
-              );
-            }).toList(),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: const Center(
+                  child: Icon(Icons.circle, color: Colors.white, size: 7),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Switch.adaptive(
+                value: _showVegOnly,
+                onChanged: (value) => setState(() => _showVegOnly = value),
+                activeTrackColor: Colors.green,
+                activeThumbColor: Colors.white,
+                inactiveTrackColor: Colors.white,
+                inactiveThumbColor: AppTheme.textMuted,
+                trackOutlineColor:
+                  const WidgetStatePropertyAll(AppTheme.border),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -211,24 +222,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
   }
 
   IconData _iconForCategory(String? iconKey) {
-    switch (iconKey) {
-      case 'rice_bowl':
-        return Icons.rice_bowl;
-      case 'fastfood':
-        return Icons.fastfood;
-      case 'local_pizza':
-        return Icons.local_pizza;
-      case 'cake':
-        return Icons.cake;
-      case 'icecream':
-        return Icons.icecream;
-      case 'bakery_dining':
-        return Icons.bakery_dining;
-      case 'restaurant':
-        return Icons.restaurant;
-      default:
-        return Icons.restaurant;
-    }
+    return CategoryIcons.resolve(iconKey);
   }
 }
 

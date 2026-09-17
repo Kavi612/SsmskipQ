@@ -82,17 +82,6 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
     });
 
     try {
-      final existingOrders = await widget.ordersService.fetchMyOrders();
-      final hasActiveOrder = existingOrders.any((order) =>
-        order.status != OrderStatus.pickedUp &&
-        order.status != OrderStatus.cancelled
-      );
-
-      if (hasActiveOrder) {
-        setState(() => _error = 'You already have an active order. Please complete it before placing a new one.');
-        return;
-      }
-
       final result = await widget.ordersService.createOrder(
         items: cart.items
             .map(
@@ -167,7 +156,7 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
     return AppScaffold(
       title: 'Checkout',
       showBack: true,
-      backTo: '/student?tab=cart',
+      backTo: '/student/cart',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

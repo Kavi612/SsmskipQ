@@ -7,6 +7,7 @@ import '../models/order.dart';
 import '../screens/manager/manager_login_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/student/student_checkout_screen.dart';
+import '../screens/student/student_cart_screen.dart';
 import '../screens/student/student_order_confirmation_screen.dart';
 import '../screens/student/student_track_order_screen.dart';
 import '../widgets/manager_shell.dart';
@@ -14,7 +15,7 @@ import '../widgets/student_shell.dart';
 
 int studentTabFromQuery(String? tab) {
   switch (tab) {
-    case 'cart':
+    case 'orders':
       return 1;
     case 'track':
       return 2;
@@ -58,8 +59,13 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
           menuService: services.menuService,
           ordersService: services.ordersService,
           socketService: services.socketService,
+          feedbackService: services.feedbackService,
           initialTab: studentTabFromQuery(state.uri.queryParameters['tab']),
         ),
+      ),
+      GoRoute(
+        path: '/student/cart',
+        builder: (_, __) => const StudentCartScreen(),
       ),
       GoRoute(
         path: '/student/checkout',
@@ -91,6 +97,7 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
             initialOrder: order,
             ordersService: services.ordersService,
             socketService: services.socketService,
+              showBottomNavigation: true,
           );
         },
       ),

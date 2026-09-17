@@ -105,7 +105,7 @@ class _StudentOrdersScreenState extends State<StudentOrdersScreen> {
           SnackBar(content: Text('$skipped item(s) skipped — no longer available.')),
         );
       }
-      if (mounted) context.go('/student?tab=cart');
+      if (mounted) context.go('/student/cart');
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

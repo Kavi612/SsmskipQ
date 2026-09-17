@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../config/theme.dart';
 import '../../models/order.dart';
 import '../../services/orders_service.dart';
 import '../../services/socket_service.dart';
-import '../../utils/helpers.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/order_status_timeline.dart';
+import '../../widgets/student_bottom_navigation_bar.dart';
 
 class StudentTrackOrderScreen extends StatefulWidget {
   const StudentTrackOrderScreen({
@@ -16,12 +15,14 @@ class StudentTrackOrderScreen extends StatefulWidget {
     this.initialOrder,
     required this.ordersService,
     required this.socketService,
+    this.showBottomNavigation = false,
   });
 
   final String orderId;
   final Order? initialOrder;
   final OrdersService ordersService;
   final SocketService socketService;
+  final bool showBottomNavigation;
 
   @override
   State<StudentTrackOrderScreen> createState() => _StudentTrackOrderScreenState();
@@ -105,11 +106,14 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const AppScaffold(
+      return AppScaffold(
         title: 'Track Order',
         showBack: true,
         backTo: '/student',
-        body: Center(child: CircularProgressIndicator()),
+        body: const Center(child: CircularProgressIndicator()),
+        bottomNavigationBar: widget.showBottomNavigation
+            ? const StudentBottomNavigationBar(selectedIndex: 2)
+            : null,
       );
     }
 
@@ -123,14 +127,12 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(_error ?? 'Order not found.'),
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: () => context.go('/student'),
-                child: const Text('BACK TO HOME'),
-              ),
             ],
           ),
         ),
+        bottomNavigationBar: widget.showBottomNavigation
+            ? const StudentBottomNavigationBar(selectedIndex: 2)
+            : null,
       );
     }
 
@@ -140,20 +142,28 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
       title: 'Track Order',
       showBack: true,
       backTo: '/student',
+        bottomNavigationBar: widget.showBottomNavigation
+          ? const StudentBottomNavigationBar(selectedIndex: 2)
+          : null,
       body: RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryMuted,
-                borderRadius: BorderRadius.circular(12),
+            Card(
+              margin: EdgeInsets.zero,
+              color: AppTheme.surface,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: AppTheme.border),
               ),
-              child: Column(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
                 children: [
-                  const Text('Token Number', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                  const Text('Your Token Number', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
                   Text(
                     order.tokenNumber,
                     style: const TextStyle(
@@ -162,71 +172,77 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
                       color: AppTheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Column(
-                        children: [
-                          const Text('Order Placed', style: TextStyle(fontSize: 12)),
-                          Text(formatIstTime(order.createdAt), style: const TextStyle(fontSize: 12)),
-                        ],
-                      ),
-                      Column(
-                        children: [
-                          const Text('Payment', style: TextStyle(fontSize: 12)),
-                          Text(order.paymentMethod.label, style: const TextStyle(fontSize: 12)),
-                        ],
-                      ),
-                    ],
+                  const SizedBox(height: 12),
+                  Text(
+                    _getStatusMessage(order.status),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
+              ),
             ),
             const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: order.status == OrderStatus.ready
-                    ? AppTheme.success.withValues(alpha: 0.15)
-                    : AppTheme.primaryMuted,
+            Card(
+              margin: EdgeInsets.zero,
+              color: AppTheme.surface,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: AppTheme.border),
               ),
-              child: Text(
-                _getStatusMessage(order.status),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Order Status', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    const SizedBox(height: 16),
+                    OrderStatusTimeline(status: order.status),
+                  ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            const Text('Order Status', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-            const SizedBox(height: 8),
-            OrderStatusTimeline(status: order.status),
-            const SizedBox(height: 16),
-            const Text('Order Details', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-            ...order.items.map(
-              (item) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text('${item.name} × ${item.quantity}', style: const TextStyle(fontSize: 14)),
-                trailing: Text('₹${item.price * item.quantity}', style: const TextStyle(fontSize: 14)),
+            Card(
+              margin: EdgeInsets.zero,
+              color: AppTheme.surface,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: AppTheme.border),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Order Details', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    const SizedBox(height: 12),
+                    ...order.items.map(
+                      (item) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text('${item.name} × ${item.quantity}', style: const TextStyle(fontSize: 14)),
+                        trailing: Text('₹${item.price * item.quantity}', style: const TextStyle(fontSize: 14)),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Total', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                        Text('₹${order.total}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Total', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                Text('₹${order.total}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              ],
-            ),
             const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: () => context.go('/student'),
-              child: const Text('BACK TO HOME', style: TextStyle(fontSize: 14)),
-            ),
           ],
         ),
       ),

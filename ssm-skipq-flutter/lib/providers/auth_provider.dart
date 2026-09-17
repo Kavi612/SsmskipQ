@@ -65,6 +65,19 @@ class AuthProvider extends ChangeNotifier {
     await _completeLogin(result);
   }
 
+  Future<void> updateStudentProfile({
+    required String registerNumber,
+    required String department,
+    required String academicStream,
+  }) async {
+    _user = await _auth.updateStudentProfile(
+      registerNumber: registerNumber,
+      department: department,
+      academicStream: academicStream,
+    );
+    notifyListeners();
+  }
+
   Future<void> _completeLogin(AuthResult result) async {
     await _api.setToken(result.token);
     _user = result.user;
