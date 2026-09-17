@@ -218,10 +218,31 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
           category: category,
           items: _items.where((item) => item.categoryId == category.id).toList(),
           onAddItem: () => _showAddItemDialog(category),
+          onUpdatePrice: (item, price) => _updatePrice(item, price),
+          onToggleAvailability: _toggleAvailability,
           onEditCategory: () => _showCategoryDialog(category: category),
           onDeleteCategory: () async {
-            await _deleteCategory(category);
-            if (mounted) Navigator.pop(context);
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Delete Category?'),
+                content: Text('Delete ${category.name}? Menu items must be moved or deleted first.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed == true) {
+              await _deleteCategory(category);
+              if (mounted) Navigator.pop(context);
+            }
           },
         ),
       ),
@@ -287,7 +308,9 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                         'isVeg': isVeg.toString(),
                       }),
                     );
-                    if (dialogContext.mounted) Navigator.pop(dialogContext);
+                    if (dialogContext.mounted) {
+                      Navigator.pop(dialogContext, item);
+                    }
                     if (mounted) setState(() => _items = [..._items, item]);
                   } catch (_) {
                     if (mounted) setState(() => _error = 'Unable to create menu item.');
@@ -306,15 +329,17 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
     }
   }
 
-  Future<void> _toggleAvailability(MenuItem item) async {
+  Future<MenuItem?> _toggleAvailability(MenuItem item) async {
     try {
       final updated = await widget.menuService.toggleAvailability(item.id);
       setState(() {
         final idx = _items.indexWhere((e) => e.id == item.id);
         if (idx >= 0) _items[idx] = updated;
       });
+      return updated;
     } catch (_) {
       setState(() => _error = 'Unable to toggle availability.');
+      return null;
     }
   }
 
@@ -370,13 +395,13 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
           OutlinedButton.icon(
             onPressed: () => _showCategoryDialog(),
             icon: const Icon(Icons.add_circle_outline),
-            label: const Text('New Category'),
+            label: const Text('Add New Category'),
           ),
           if (_categories.isEmpty)
             const Text('Create a category before adding menu items.')
           else
             SizedBox(
-              height: 112,
+              height: 96,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _categories.length,
@@ -385,7 +410,7 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                   final category = _categories[index];
                   final selected = _categoryId == category.id;
                   return SizedBox(
-                    width: 120,
+                    width: 96,
                     child: Card(
                       margin: EdgeInsets.zero,
                       elevation: 0,
@@ -404,7 +429,7 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(_categoryIcon(category.icon),
-                                color: AppTheme.primary, size: 24),
+                                color: AppTheme.primary, size: 20),
                               const SizedBox(height: 8),
                             Text(
                               category.name,
@@ -413,7 +438,7 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 12,
+                                fontSize: 10,
                               ),
                             ),
                           ],
@@ -564,11 +589,13 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
   }
 }
 
-class _CategoryItemsPage extends StatelessWidget {
+class _CategoryItemsPage extends StatefulWidget {
   const _CategoryItemsPage({
     required this.category,
     required this.items,
     required this.onAddItem,
+    required this.onUpdatePrice,
+    required this.onToggleAvailability,
     required this.onEditCategory,
     required this.onDeleteCategory,
   });
@@ -576,13 +603,28 @@ class _CategoryItemsPage extends StatelessWidget {
   final Category category;
   final List<MenuItem> items;
   final Future<MenuItem?> Function() onAddItem;
+  final Future<void> Function(MenuItem item, String price) onUpdatePrice;
+  final Future<MenuItem?> Function(MenuItem item) onToggleAvailability;
   final VoidCallback onEditCategory;
   final Future<void> Function() onDeleteCategory;
 
   @override
+  State<_CategoryItemsPage> createState() => _CategoryItemsPageState();
+}
+
+class _CategoryItemsPageState extends State<_CategoryItemsPage> {
+  late List<MenuItem> _items;
+
+  @override
+  void initState() {
+    super.initState();
+    _items = [...widget.items];
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(category.name)),
+      appBar: AppBar(title: Text(widget.category.name)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -590,7 +632,7 @@ class _CategoryItemsPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${items.length} item${items.length == 1 ? '' : 's'}',
+                '${_items.length} item${_items.length == 1 ? '' : 's'}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -598,7 +640,10 @@ class _CategoryItemsPage extends StatelessWidget {
               ),
               ElevatedButton.icon(
                 onPressed: () async {
-                  await onAddItem();
+                  final item = await widget.onAddItem();
+                  if (item != null && mounted) {
+                    setState(() => _items = [..._items, item]);
+                  }
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('Add Item'),
@@ -606,46 +651,72 @@ class _CategoryItemsPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          if (items.isEmpty)
+          if (_items.isEmpty)
             const Padding(
               padding: EdgeInsets.all(24),
               child: Text('No items in this category yet.'),
             )
           else
-            ...items.map(
+            ..._items.map(
               (item) => Card(
                 margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(12),
-                  leading: item.imageUrl.isEmpty
-                      ? const Icon(Icons.restaurant, size: 42)
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            item.imageUrl,
-                            width: 52,
-                            height: 52,
-                            fit: BoxFit.cover,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(item.name,
+                                style: const TextStyle(fontWeight: FontWeight.w700)),
                           ),
-                        ),
-                  title: Text(item.name),
-                  subtitle: Text(item.isVeg ? 'Veg' : 'Non-Veg'),
-                  trailing: Text(
-                    '₹${item.price}',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                          Text(item.isVeg ? 'Veg' : 'Non-Veg'),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: TextEditingController(text: '${item.price}'),
+                        decoration: const InputDecoration(labelText: 'Price'),
+                        keyboardType: TextInputType.number,
+                        onSubmitted: (value) => widget.onUpdatePrice(item, value),
+                      ),
+                      Row(
+                        children: [
+                          Text(item.available ? 'Available' : 'Unavailable'),
+                          const Spacer(),
+                          Switch(
+                            value: item.available,
+                            onChanged: (_) async {
+                              final updated =
+                                  await widget.onToggleAvailability(item);
+                              if (updated != null && mounted) {
+                                setState(() {
+                                  _items = _items
+                                      .map((entry) => entry.id == updated.id
+                                          ? updated
+                                          : entry)
+                                      .toList();
+                                });
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
           const SizedBox(height: 20),
           OutlinedButton.icon(
-            onPressed: onEditCategory,
+            onPressed: widget.onEditCategory,
             icon: const Icon(Icons.edit_outlined),
             label: const Text('Edit Category'),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: onDeleteCategory,
+            onPressed: widget.onDeleteCategory,
             icon: const Icon(Icons.delete_outline, color: AppTheme.error),
             label: const Text('Delete Category'),
           ),
