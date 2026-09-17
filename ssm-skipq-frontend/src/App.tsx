@@ -39,6 +39,10 @@ function App() {
                 path="/student/order-confirmation"
                 element={<StudentOrderConfirmationPage />}
               />
+              <Route
+                path="/student/track-order/:orderId"
+                element={<StudentOrderConfirmationPage />}
+              />
               <Route path="/student/orders" element={<Navigate to="/student" replace />} />
               <Route path="/student/profile" element={<StudentProfilePage />} />
             </Route>
