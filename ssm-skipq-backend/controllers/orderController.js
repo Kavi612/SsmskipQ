@@ -280,14 +280,9 @@ export const createOrder = async (req, res) => {
 export const getMyOrders = async (req, res) => {
   try {
     const studentId = req.user.id;
-    const todayStart = getTodayStartIst();
 
     const [orders, feedbackRows] = await Promise.all([
-      Order.find({
-        studentId,
-        createdAt: { $gte: todayStart },
-        status: { $nin: ['PICKED_UP', 'CANCELLED'] },
-      })
+      Order.find({ studentId })
         .sort({ createdAt: -1 })
         .lean(),
       Feedback.find({ studentId }).select('orderId').lean(),
@@ -319,6 +314,45 @@ export const getMyOrders = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Unable to fetch orders',
+    });
+  }
+};
+
+export const getMyOrderById = async (req, res) => {
+  try {
+    const order = await Order.findOne({
+      _id: req.params.id,
+      studentId: req.user.id,
+    }).lean();
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    const hasFeedback = await Feedback.exists({
+      orderId: order._id,
+      studentId: req.user.id,
+    });
+
+    return res.json({
+      success: true,
+      data: { order: { ...formatOrder(order), hasFeedback: Boolean(hasFeedback) } },
+    });
+  } catch (error) {
+    if (error instanceof mongoose.Error.CastError) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    console.error('Get student order error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to fetch order',
     });
   }
 };

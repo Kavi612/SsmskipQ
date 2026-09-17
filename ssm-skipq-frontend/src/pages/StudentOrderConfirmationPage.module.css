@@ -13,177 +13,111 @@
   gap: var(--space-4);
 }
 
-.tokenCard,
-.section {
-  padding: var(--space-5);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
 .tokenCard {
+  padding: var(--space-5);
   text-align: center;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .tokenLabel {
   display: block;
   margin-bottom: var(--space-2);
-  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 .token {
   display: block;
-  color: var(--color-primary);
+  margin-bottom: var(--space-4);
   font-family: var(--font-display);
   font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
   letter-spacing: 0.06em;
 }
 
-.message {
-  max-width: 34rem;
-  margin: var(--space-3) auto 0;
-  color: var(--color-text-secondary);
+.tokenMeta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.metaLabel {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.metaValue {
+  font-family: var(--font-display);
   font-size: var(--font-size-sm);
-  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-semibold);
+}
+
+.metaAccent {
+  color: var(--color-primary);
+}
+
+.section {
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .sectionTitle {
-  margin: 0 0 var(--space-5);
+  margin: 0 0 var(--space-4);
   font-family: var(--font-display);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);
 }
 
-.tracker {
-  position: relative;
-  padding: 0 var(--space-2);
-}
-
-.progressTrack,
-.progressFill {
-  position: absolute;
-  top: 1.1rem;
-  left: 12.5%;
-  height: 0.2rem;
-  border-radius: var(--radius-full);
-}
-
-.progressTrack {
-  width: 75%;
-  background: var(--color-gray-200);
-}
-
-.progressFill {
-  left: 12.5%;
-  width: 0;
-  background: var(--color-primary);
-}
-
-.stages {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text-muted);
-  text-align: center;
-}
-
-.stageIcon {
-  display: grid;
-  place-items: center;
-  width: 2.3rem;
-  height: 2.3rem;
-  background: var(--color-gray-100);
-  border: 2px solid var(--color-gray-300);
-  border-radius: var(--radius-full);
-}
-
-.stageLabel {
-  max-width: 7rem;
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-tight);
-}
-
-.stage.complete,
-.stage.current {
-  color: var(--color-primary);
-}
-
-.stage.complete .stageIcon,
-.stage.current .stageIcon {
-  background: var(--color-primary-muted);
-  border-color: var(--color-primary);
-}
-
-.stage.current .stageIcon {
-  box-shadow: 0 0 0 4px rgb(254 65 1 / 0.12);
-}
-
-.cancelled {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-error);
-  font-size: var(--font-size-sm);
-}
-
 .items {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  list-style: none;
   margin: 0 0 var(--space-3);
   padding: 0;
-  list-style: none;
-}
-
-.itemRow,
-.totalRow {
   display: flex;
-  justify-content: space-between;
-  gap: var(--space-4);
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .itemRow {
-  color: var(--color-text-secondary);
+  display: flex;
+  justify-content: space-between;
   font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 .totalRow {
+  display: flex;
+  justify-content: space-between;
   padding-top: var(--space-3);
   border-top: 1px solid var(--color-border);
   font-family: var(--font-display);
   font-weight: var(--font-weight-bold);
 }
 
-.error {
-  max-width: var(--max-width-content);
-  margin: var(--space-4) auto;
-  padding: var(--space-4);
-  color: var(--color-error);
-  background: var(--color-error-muted);
-  border-radius: var(--radius-md);
+.outlineBtn {
+  display: block;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.03em;
+  color: var(--color-primary);
   text-align: center;
+  text-decoration: none;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
 }
 
-@media (max-width: 520px) {
-  .tokenCard,
-  .section {
-    padding: var(--space-4);
-  }
-
-  .stageLabel {
-    max-width: 4.8rem;
-  }
+.outlineBtn:hover {
+  background: var(--color-primary-muted);
 }

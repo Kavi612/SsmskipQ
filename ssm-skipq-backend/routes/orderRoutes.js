@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   createOrder,
   getMyOrders,
+  getMyOrderById,
   getManagerOrders,
   getOrderAnalytics,
   advanceOrderStatus,
@@ -45,5 +46,6 @@ router.patch(
   authorize('manager'),
   updateOrderPayment,
 );
+router.get('/:id', authenticate, authorize('student'), getMyOrderById);
 
 export default router;

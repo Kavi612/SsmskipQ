@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../providers/cart_provider.dart';
 import '../providers/ordering_window_provider.dart';
-import '../services/feedback_service.dart';
 import '../services/menu_service.dart';
 import '../services/orders_service.dart';
 import '../services/socket_service.dart';
@@ -32,6 +31,7 @@ class StudentShell extends StatefulWidget {
 
 class _StudentShellState extends State<StudentShell> {
   late int _index;
+  int _homeRefreshToken = 0;
 
   @override
   void initState() {
@@ -52,7 +52,10 @@ class _StudentShellState extends State<StudentShell> {
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     final tabs = [
-      StudentHomeScreen(menuService: widget.menuService),
+      StudentHomeScreen(
+        menuService: widget.menuService,
+        refreshToken: _homeRefreshToken,
+      ),
       const StudentCartScreen(),
       StudentTrackOrderListScreen(
         ordersService: widget.ordersService,
@@ -69,7 +72,10 @@ class _StudentShellState extends State<StudentShell> {
       body: IndexedStack(index: _index, children: tabs),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: (i) => setState(() {
+          _index = i;
+          if (i == 0) _homeRefreshToken++;
+        }),
         destinations: [
           const NavigationDestination(
             icon: Icon(Icons.home_outlined),

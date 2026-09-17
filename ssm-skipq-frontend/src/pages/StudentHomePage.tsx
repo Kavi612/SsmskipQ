@@ -25,22 +25,38 @@ const StudentHomePage = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadMenu = async () => {
       try {
         const [cats, items] = await Promise.all([
           fetchCategories(),
           fetchMenuItems(),
         ]);
+        if (cancelled) return;
         setCategories(cats);
         setMenuItems(items);
+        setError('');
       } catch {
-        setError('Unable to load menu. Please try again.');
+        if (!cancelled) setError('Unable to load menu. Please try again.');
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
-    loadMenu();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void loadMenu();
+    };
+
+    void loadMenu();
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
   }, []);
 
   const filteredItems = useMemo(() => {

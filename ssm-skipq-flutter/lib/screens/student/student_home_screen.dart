@@ -11,15 +11,21 @@ import '../../utils/helpers.dart';
 import '../../widgets/food_card.dart';
 
 class StudentHomeScreen extends StatefulWidget {
-  const StudentHomeScreen({super.key, required this.menuService});
+  const StudentHomeScreen({
+    super.key,
+    required this.menuService,
+    this.refreshToken = 0,
+  });
 
   final MenuService menuService;
+  final int refreshToken;
 
   @override
   State<StudentHomeScreen> createState() => _StudentHomeScreenState();
 }
 
-class _StudentHomeScreenState extends State<StudentHomeScreen> {
+class _StudentHomeScreenState extends State<StudentHomeScreen>
+  with WidgetsBindingObserver {
   List<Category> _categories = [];
   List<MenuItem> _items = [];
   String? _selectedCategoryId;
@@ -31,7 +37,29 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant StudentHomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshToken != widget.refreshToken) {
+      _load();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _load();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -141,7 +169,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               children: [
                 _CategoryCard(
                   name: 'All',
-                  icon: getCategoryIcon('All'),
+                  icon: Icons.restaurant_menu,
                   isSelected: _selectedCategoryId == null,
                   onTap: () => setState(() => _selectedCategoryId = null),
                 ),
