@@ -57,14 +57,11 @@ class _StudentTrackOrderListScreenState extends State<StudentTrackOrderListScree
     });
     try {
       final allOrders = await widget.ordersService.fetchMyOrders();
-      final activeOrders = allOrders.where((order) =>
-        order.status != OrderStatus.pickedUp &&
-        order.status != OrderStatus.cancelled
-      ).toList();
-      
+      final activeOrder = getCurrentActiveOrderForStudent(allOrders);
+
       if (mounted) {
         setState(() {
-          _activeOrder = activeOrders.isNotEmpty ? activeOrders.first : null;
+          _activeOrder = activeOrder;
           _loading = false;
         });
       }

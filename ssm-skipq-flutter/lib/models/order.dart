@@ -11,6 +11,37 @@ enum OrderStatus {
   cancelled,
 }
 
+extension OrderStatusExtensions on OrderStatus {
+  bool get isActiveOrderStatus {
+    switch (this) {
+      case OrderStatus.pending:
+      case OrderStatus.confirmed:
+      case OrderStatus.preparing:
+      case OrderStatus.ready:
+        return true;
+      case OrderStatus.pickedUp:
+      case OrderStatus.cancelled:
+        return false;
+    }
+  }
+}
+
+Order? getCurrentActiveOrderForStudent(List<Order> orders, {String? orderId}) {
+  final activeOrders = orders.where((order) => order.status.isActiveOrderStatus);
+  if (orderId != null) {
+    final match = activeOrders.where((order) => order.id == orderId).toList();
+    if (match.isNotEmpty) {
+      return match.reduce((current, next) =>
+          next.createdAt.isAfter(current.createdAt) ? next : current);
+    }
+    return null;
+  }
+
+  if (activeOrders.isEmpty) return null;
+  return activeOrders.reduce((current, next) =>
+      next.createdAt.isAfter(current.createdAt) ? next : current);
+}
+
 extension PaymentMethodX on PaymentMethod {
   String get apiValue {
     switch (this) {

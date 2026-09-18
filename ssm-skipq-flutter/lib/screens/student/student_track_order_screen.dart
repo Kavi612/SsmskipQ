@@ -36,7 +36,9 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
   @override
   void initState() {
     super.initState();
-    _order = widget.initialOrder;
+    _order = widget.initialOrder != null && widget.initialOrder!.status.isActiveOrderStatus
+        ? widget.initialOrder
+        : null;
     _loading = _order == null;
     _refresh();
     widget.socketService.joinStudentRoom();
@@ -52,7 +54,7 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
   void _handleOrderUpdated(Order updated) {
     if (updated.id == widget.orderId && mounted) {
       setState(() {
-        _order = updated;
+        _order = updated.status.isActiveOrderStatus ? updated : null;
         _loading = false;
         _error = null;
       });
@@ -62,28 +64,20 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
   Future<void> _refresh() async {
     try {
       final orders = await widget.ordersService.fetchMyOrders();
-      final latest = orders.where((o) => o.id == widget.orderId).firstOrNull;
+      final latest = getCurrentActiveOrderForStudent(orders, orderId: widget.orderId);
       if (!mounted) return;
-      if (latest != null) {
-        setState(() {
-          _order = latest;
-          _loading = false;
-          _error = null;
-        });
-      } else if (_order == null) {
-        setState(() {
-          _loading = false;
-          _error = 'Order not found.';
-        });
-      }
+      setState(() {
+        _order = latest;
+        _loading = false;
+        _error = null;
+      });
     } catch (_) {
       if (!mounted) return;
-      if (_order == null) {
-        setState(() {
-          _loading = false;
-          _error = 'Unable to load order details.';
-        });
-      }
+      setState(() {
+        _order = null;
+        _loading = false;
+        _error = 'Unable to load order details.';
+      });
     }
   }
 
@@ -117,7 +111,7 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
       );
     }
 
-    if (_error != null || _order == null) {
+    if (_error != null && _order == null) {
       return AppScaffold(
         title: 'Track Order',
         showBack: true,
@@ -126,8 +120,57 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_error ?? 'Order not found.'),
+              const Icon(Icons.receipt_long_outlined, size: 56, color: AppTheme.textMuted),
+              const SizedBox(height: 16),
+              const Text(
+                'No order in progress right now',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Place an order from the menu to start tracking it here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil('/student', (route) => false),
+                child: const Text('BROWSE MENU'),
+              ),
             ],
+          ),
+        ),
+        bottomNavigationBar: widget.showBottomNavigation
+            ? const StudentBottomNavigationBar(selectedIndex: 2)
+            : null,
+      );
+    }
+
+    if (_order == null) {
+      return AppScaffold(
+        title: 'Track Order',
+        showBack: true,
+        backTo: '/student',
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.receipt_long_outlined, size: 56, color: AppTheme.textMuted),
+                SizedBox(height: 16),
+                Text(
+                  'No order in progress right now',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Place an order from the menu to start tracking it here.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
           ),
         ),
         bottomNavigationBar: widget.showBottomNavigation
