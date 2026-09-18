@@ -3,12 +3,20 @@ import 'package:intl/intl.dart';
 
 import '../../config/theme.dart';
 import '../../models/order.dart';
+import '../../models/menu.dart';
+import '../../config/menu_assets.dart';
+import '../../services/menu_service.dart';
 import '../../services/orders_service.dart';
 
 class ManagerAnalyticsScreen extends StatefulWidget {
-  const ManagerAnalyticsScreen({super.key, required this.ordersService});
+  const ManagerAnalyticsScreen({
+    super.key,
+    required this.ordersService,
+    required this.menuService,
+  });
 
   final OrdersService ordersService;
+  final MenuService menuService;
 
   @override
   State<ManagerAnalyticsScreen> createState() => _ManagerAnalyticsScreenState();
@@ -21,6 +29,7 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
   final DateFormat _monthFormat = DateFormat('MMMM yyyy');
   final DateFormat _shortDateFormat = DateFormat('d MMM');
   List<Order> _orders = [];
+  List<MenuItem> _menuItems = [];
   bool _loading = true;
   String? _error;
   _AnalyticsPeriod _period = _AnalyticsPeriod.day;
@@ -43,7 +52,12 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
       _error = null;
     });
     try {
-      _orders = await widget.ordersService.fetchManagerOrders();
+      final results = await Future.wait([
+        widget.ordersService.fetchManagerOrders(),
+        widget.menuService.fetchMenuItems(),
+      ]);
+      _orders = results[0] as List<Order>;
+      _menuItems = results[1] as List<MenuItem>;
     } catch (_) {
       _error = 'Unable to load analytics data.';
     } finally {
@@ -80,22 +94,34 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
   }
 
   Future<void> _choosePeriod(_AnalyticsPeriod period) async {
+    final previousPeriod = _period;
+    if (mounted) setState(() => _period = period);
+
     switch (period) {
       case _AnalyticsPeriod.day:
         final chosen = await _showDayPicker();
-        if (chosen != null && mounted) setState(() { _period = period; _day = chosen; });
+        if (chosen != null && mounted) {
+          setState(() => _day = chosen);
+        } else if (mounted) {
+          setState(() => _period = previousPeriod);
+        }
       case _AnalyticsPeriod.month:
         final chosen = await _showMonthPicker();
         if (chosen != null && mounted) {
           setState(() {
-            _period = period;
             _month = chosen;
             _monthStripYear = chosen.year;
           });
+        } else if (mounted) {
+          setState(() => _period = previousPeriod);
         }
       case _AnalyticsPeriod.year:
         final chosen = await _showYearPicker();
-        if (chosen != null && mounted) setState(() { _period = period; _year = chosen; });
+        if (chosen != null && mounted) {
+          setState(() => _year = chosen);
+        } else if (mounted) {
+          setState(() => _period = previousPeriod);
+        }
       case _AnalyticsPeriod.custom:
         final chosen = await showDateRangePicker(
           context: context,
@@ -109,9 +135,10 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
           final start = DateTime(chosen.start.year, chosen.start.month, chosen.start.day);
           final end = DateTime(chosen.end.year, chosen.end.month, chosen.end.day).add(const Duration(days: 1));
           setState(() {
-            _period = period;
             _customRange = DateTimeRange(start: start, end: end);
           });
+        } else if (mounted) {
+          setState(() => _period = previousPeriod);
         }
     }
   }

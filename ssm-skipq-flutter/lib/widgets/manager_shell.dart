@@ -45,7 +45,10 @@ class _ManagerShellState extends State<ManagerShell> {
       ),
       ManagerMenuScreen(menuService: widget.menuService),
       ManagerFeedbackScreen(feedbackService: widget.feedbackService),
-      ManagerAnalyticsScreen(ordersService: widget.ordersService),
+      ManagerAnalyticsScreen(
+        ordersService: widget.ordersService,
+        menuService: widget.menuService,
+      ),
     ];
 
     return Scaffold(
