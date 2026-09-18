@@ -4,9 +4,9 @@ import 'package:intl/intl.dart';
 import '../../config/theme.dart';
 import '../../models/order.dart';
 import '../../models/menu.dart';
-import '../../config/menu_assets.dart';
 import '../../services/menu_service.dart';
 import '../../services/orders_service.dart';
+import '../../widgets/menu_item_image.dart';
 
 class ManagerAnalyticsScreen extends StatefulWidget {
   const ManagerAnalyticsScreen({
@@ -192,10 +192,9 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
       context: context,
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, setSheetState) => SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Choose a month', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
@@ -262,54 +261,60 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
     final topItems = _rankItems(orders);
     final cancelledItems = _rankItems(cancelled);
 
+    final bodyChildren = <Widget>[
+      const Text('Analytics', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 4),
+      Text(_periodLabel, style: const TextStyle(color: AppTheme.textSecondary)),
+      const SizedBox(height: 16),
+      _filterBar(),
+      if (_period == _AnalyticsPeriod.day) _dayStrip(),
+      if (_period == _AnalyticsPeriod.month) _monthStrip(),
+      if (_period == _AnalyticsPeriod.custom && _customRange != null)
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () => setState(() {
+              _period = _AnalyticsPeriod.day;
+              _customRange = null;
+              _day = DateTime.now();
+            }),
+            icon: const Icon(Icons.clear),
+            label: const Text('Clear selection'),
+          ),
+        ),
+      if (_loading)
+        const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
+      else if (_error != null)
+        Text(_error!, style: const TextStyle(color: AppTheme.error))
+      else ...[
+        _primaryCards(orders, completed, cancelled, revenue),
+        const SizedBox(height: 16),
+        _highlight(topItems),
+        const SizedBox(height: 16),
+        _section('Top 5 Most Ordered Items', _rankedList(topItems, empty: 'No order data available for this period')),
+        const SizedBox(height: 16),
+        _section('Cancellation Analytics', Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [Expanded(child: _miniMetric('Cancelled Orders', '${cancelled.length}')), const SizedBox(width: 10), Expanded(child: _miniMetric('Cancelled Item Quantities', '${cancelled.fold<int>(0, (sum, order) => sum + order.items.fold<int>(0, (itemSum, item) => itemSum + item.quantity))}'))]),
+            const SizedBox(height: 16),
+            const Text('Most cancelled food items', style: TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            _rankedList(cancelledItems, empty: 'No cancelled items for this period'),
+          ],
+        )),
+      ],
+    ];
+
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView(
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
-        children: [
-          const Text('Analytics', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text(_periodLabel, style: const TextStyle(color: AppTheme.textSecondary)),
-          const SizedBox(height: 16),
-          _filterBar(),
-          if (_period == _AnalyticsPeriod.day) _dayStrip(),
-          if (_period == _AnalyticsPeriod.month) _monthStrip(),
-          if (_period == _AnalyticsPeriod.custom && _customRange != null)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: () => setState(() {
-                  _period = _AnalyticsPeriod.day;
-                  _customRange = null;
-                  _day = DateTime.now();
-                }),
-                icon: const Icon(Icons.clear),
-                label: const Text('Clear selection'),
-              ),
-            ),
-          if (_loading)
-            const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
-          else if (_error != null)
-            Text(_error!, style: const TextStyle(color: AppTheme.error))
-          else ...[
-            _primaryCards(orders, completed, cancelled, revenue),
-            const SizedBox(height: 16),
-            _highlight(topItems),
-            const SizedBox(height: 16),
-            _section('Top 5 most ordered items', _rankedList(topItems, empty: 'No order data available for this period')),
-            const SizedBox(height: 16),
-            _section('Cancellation analytics', Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [Expanded(child: _miniMetric('Cancelled Orders', '${cancelled.length}')), const SizedBox(width: 10), Expanded(child: _miniMetric('Cancelled Item Quantities', '${cancelled.fold<int>(0, (sum, order) => sum + order.items.fold<int>(0, (itemSum, item) => itemSum + item.quantity))}'))]),
-                const SizedBox(height: 16),
-                const Text('Most cancelled food items', style: TextStyle(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 8),
-                _rankedList(cancelledItems, empty: 'No cancelled items for this period'),
-              ],
-            )),
-          ],
-        ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: bodyChildren,
+        ),
       ),
     );
   }
@@ -466,52 +471,317 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
     );
   }
 
-  Widget _section(String title, Widget child) => Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)), const SizedBox(height: 14), child])));
+  Widget _section(String title, Widget child) => Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    title.toLowerCase().contains('top 5')
+                        ? Icons.format_list_numbered_rounded
+                        : Icons.trending_up_rounded,
+                    size: 18,
+                    color: AppTheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              child,
+            ],
+          ),
+        ),
+      );
 
-  Widget _highlight(List<_RankedItem> items) => Card(color: AppTheme.primaryMuted, child: Padding(padding: const EdgeInsets.all(16), child: items.isEmpty ? const Text('No order data available for this period') : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Most Ordered Item', style: TextStyle(fontWeight: FontWeight.w700)), const SizedBox(height: 6), Text(items.first.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)), Text('${items.first.quantity} portions')])));
+  Widget _highlight(List<_RankedItem> items) {
+    return Card(
+      key: const ValueKey('most_ordered_item_card'),
+      color: AppTheme.primaryMuted,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.emoji_events_rounded, size: 18, color: AppTheme.primary),
+                const SizedBox(width: 8),
+                const Text(
+                  'Most Ordered Item',
+                  key: ValueKey('most_ordered_item_title'),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () {},
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.primary,
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('View All'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (items.isEmpty)
+              const Text('No order data available for this period')
+            else ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _itemImage(items.first, size: 120, radius: 14),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            items.first.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Quantity Ordered',
+                            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${items.first.quantity}',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _itemImage(_RankedItem item, {double size = 48, double radius = 12}) {
+    final matchingItem = _menuItems.firstWhere(
+      (menuItem) => _normalizeName(menuItem.name) == _normalizeName(item.name),
+      orElse: () => MenuItem(
+        id: item.name,
+        name: item.name,
+        description: '',
+        price: 0,
+        categoryId: '',
+        categoryName: '',
+        imageUrl: item.imageUrl,
+        isVeg: true,
+        available: true,
+      ),
+    );
+
+    return MenuItemImage(
+      item: matchingItem,
+      width: size,
+      height: size,
+      borderRadius: radius,
+    );
+  }
+
+  String _normalizeName(String input) => input
+      .trim()
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .toLowerCase();
 
   Widget _rankedList(List<_RankedItem> items, {required String empty}) {
     if (items.isEmpty) {
       return Text(empty, style: const TextStyle(color: AppTheme.textSecondary));
     }
+
     return Column(
       children: items.take(5).toList().asMap().entries.map((entry) {
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: CircleAvatar(
-            backgroundColor: AppTheme.primaryMuted,
-            child: Text('${entry.key + 1}'),
+        final item = entry.value;
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: AppTheme.border.withValues(alpha: 0.8),
+              ),
+            ),
           ),
-          title: Text(entry.value.name),
-          trailing: Text(
-            '${entry.value.quantity}',
-            style: const TextStyle(fontWeight: FontWeight.w700),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    '${entry.key + 1}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              _itemImage(item, size: 44, radius: 10),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Quantity Ordered',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '${item.quantity}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.primary,
+                ),
+              ),
+            ],
           ),
         );
       }).toList(),
     );
   }
 
-  Widget _miniMetric(String label, String value) => Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: AppTheme.bgSubtle, borderRadius: BorderRadius.circular(10)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)), const SizedBox(height: 4), Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800))]));
+  Widget _miniMetric(String label, String value) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppTheme.bgSubtle,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      );
 
   List<_RankedItem> _rankItems(List<Order> orders) {
     final quantities = <String, int>{};
     final latest = <String, DateTime>{};
+    final imageUrls = <String, String>{};
+
     for (final order in orders) {
       for (final item in order.items) {
         quantities[item.name] = (quantities[item.name] ?? 0) + item.quantity;
-        if (!latest.containsKey(item.name) || order.createdAt.isAfter(latest[item.name]!)) latest[item.name] = order.createdAt;
+        if (!latest.containsKey(item.name) ||
+            order.createdAt.isAfter(latest[item.name]!)) {
+          latest[item.name] = order.createdAt;
+        }
+
+        final matchedMenuItem = _menuItems.firstWhere(
+          (menuItem) => _normalizeName(menuItem.name) == _normalizeName(item.name),
+          orElse: () => MenuItem(
+            id: item.name,
+            name: item.name,
+            description: '',
+            price: 0,
+            categoryId: '',
+            categoryName: '',
+            imageUrl: '',
+            isVeg: true,
+            available: true,
+          ),
+        );
+
+        if (!imageUrls.containsKey(item.name)) {
+          imageUrls[item.name] = matchedMenuItem.imageUrl;
+        }
       }
     }
-    return quantities.entries.map((entry) => _RankedItem(entry.key, entry.value, latest[entry.key]!)).toList()..sort((a, b) => b.quantity != a.quantity ? b.quantity.compareTo(a.quantity) : b.latest.compareTo(a.latest));
-  }
 
+    return quantities.entries
+        .map(
+          (entry) => _RankedItem(
+            entry.key,
+            entry.value,
+            latest[entry.key] ?? DateTime.now(),
+            imageUrl: imageUrls[entry.key] ?? '',
+          ),
+        )
+        .toList()
+      ..sort((a, b) => b.quantity != a.quantity
+          ? b.quantity.compareTo(a.quantity)
+          : b.latest.compareTo(a.latest));
+  }
 }
 
 class _RankedItem {
-  const _RankedItem(this.name, this.quantity, this.latest);
+  const _RankedItem(this.name, this.quantity, this.latest, {this.imageUrl = ''});
   final String name;
   final int quantity;
   final DateTime latest;
+  final String imageUrl;
 }
 
