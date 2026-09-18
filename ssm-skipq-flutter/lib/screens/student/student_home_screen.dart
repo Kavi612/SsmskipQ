@@ -148,16 +148,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: const Center(
-                  child: Icon(Icons.circle, color: Colors.white, size: 7),
-                ),
+              const Icon(
+                Icons.eco,
+                color: Colors.green,
+                size: 20,
               ),
               const SizedBox(width: 6),
               Switch.adaptive(

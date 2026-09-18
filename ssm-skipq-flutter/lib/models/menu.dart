@@ -44,6 +44,29 @@ class MenuItem {
   final bool isVeg;
   final bool available;
 
+  MenuItem copyWith({
+    String? name,
+    String? description,
+    num? price,
+    String? categoryId,
+    String? categoryName,
+    String? imageUrl,
+    bool? isVeg,
+    bool? available,
+  }) {
+    return MenuItem(
+      id: id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
+      imageUrl: imageUrl ?? this.imageUrl,
+      isVeg: isVeg ?? this.isVeg,
+      available: available ?? this.available,
+    );
+  }
+
   factory MenuItem.fromJson(Map<String, dynamic> json) {
     return MenuItem(
       id: json['id']?.toString() ?? json['_id']?.toString() ?? '',

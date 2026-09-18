@@ -49,11 +49,13 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
   }
 
   Future<void> _showCategoryDialog({Category? category}) async {
+    final screenContext = context;
     final nameController = TextEditingController(text: category?.name ?? '');
     final orderController = TextEditingController(
       text: '${category?.sortOrder ?? _categories.length}',
     );
     var icon = category?.icon ?? 'restaurant';
+    var isSubmitting = false;
 
     final result = await showDialog<bool>(
       context: context,
@@ -104,49 +106,87 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
               ),
             ),
             ElevatedButton(
-              onPressed: () async {
-                final name = nameController.text.trim();
-                final sortOrder = int.tryParse(orderController.text) ?? 0;
-                if (name.isEmpty) return;
-                try {
-                  final updated = category == null
-                      ? await widget.menuService.createCategory(
-                          name: name, icon: icon, sortOrder: sortOrder)
-                      : await widget.menuService.updateCategory(
-                          category.id,
-                          name: name,
-                          icon: icon,
-                          sortOrder: sortOrder,
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      if (nameController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(screenContext).showSnackBar(
+                          const SnackBar(
+                            content: Text('Category name is required.'),
+                          ),
                         );
-                  if (!context.mounted) return;
-                  setState(() {
-                    _categories = category == null
-                        ? [..._categories, updated]
-                        : _categories
-                            .map((item) =>
-                                item.id == updated.id ? updated : item)
-                            .toList();
-                    _categories.sort((a, b) => a.sortOrder == b.sortOrder
-                        ? a.name.compareTo(b.name)
-                        : a.sortOrder.compareTo(b.sortOrder));
-                    _categoryId ??= updated.id;
-                  });
-                  Navigator.pop(context, true);
-                } catch (_) {
-                  if (mounted) {
-                    setState(() => _error = 'Unable to save category.');
-                  }
-                }
-              },
-              child: const Text('Save'),
+                        return;
+                      }
+
+                      setDialogState(() => isSubmitting = true);
+
+                      final name = nameController.text.trim();
+                      final sortOrder = int.tryParse(orderController.text) ?? 0;
+                      try {
+                        final updated = category == null
+                            ? await widget.menuService.createCategory(
+                                name: name,
+                                icon: icon,
+                                sortOrder: sortOrder,
+                              )
+                            : await widget.menuService.updateCategory(
+                                category.id,
+                                name: name,
+                                icon: icon,
+                                sortOrder: sortOrder,
+                              );
+                        if (!context.mounted) return;
+
+                        setState(() {
+                          _categories = category == null
+                              ? [..._categories, updated]
+                              : _categories
+                                  .map((item) => item.id == updated.id ? updated : item)
+                                  .toList();
+                          _categories.sort((a, b) => a.sortOrder == b.sortOrder
+                              ? a.name.compareTo(b.name)
+                              : a.sortOrder.compareTo(b.sortOrder));
+                          _categoryId ??= updated.id;
+                        });
+                        Navigator.pop(context, true);
+                      } catch (_) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(screenContext).showSnackBar(
+                            const SnackBar(
+                              content: Text('Unable to save category. Please try again.'),
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (context.mounted) {
+                          setDialogState(() => isSubmitting = false);
+                        }
+                      }
+                    },
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save'),
             ),
           ],
         ),
       ),
     );
+    await Future<void>.delayed(const Duration(milliseconds: 250));
     nameController.dispose();
     orderController.dispose();
-    if (result == true && mounted) setState(() {});
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(screenContext).showSnackBar(
+        SnackBar(
+          content: Text(
+            category == null ? 'Category added successfully' : 'Category updated successfully',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _deleteCategory(Category category) async {
@@ -196,7 +236,6 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
             );
             if (confirmed != true) return;
             await _deleteItem(item);
-            if (mounted) Navigator.pop(context);
           },
           onUpdatePrice: (item, price) => _updatePrice(item, price),
           onToggleAvailability: _toggleAvailability,
@@ -244,11 +283,13 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
   }
 
   Future<MenuItem?> _showAddItemDialog(Category category) async {
+    final screenContext = context;
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
     final priceController = TextEditingController();
     var isVeg = true;
     XFile? pickedImage;
+    var isSubmitting = false;
     try {
       return await showDialog<MenuItem>(
         context: context,
@@ -287,6 +328,11 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Vegetarian'),
                     value: isVeg,
+                    activeTrackColor: Colors.green,
+                    activeThumbColor: Colors.white,
+                    inactiveTrackColor: Colors.white,
+                    inactiveThumbColor: AppTheme.textMuted,
+                    trackOutlineColor: const WidgetStatePropertyAll(AppTheme.border),
                     onChanged: (value) => setDialogState(() => isVeg = value),
                   ),
                 ],
@@ -298,36 +344,64 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () async {
-                  final name = nameController.text.trim();
-                  final price = num.tryParse(priceController.text.trim());
-                  if (name.isEmpty || price == null || price < 0) return;
-                  try {
-                    final form = FormData.fromMap({
-                      'name': name,
-                      'description': descriptionController.text.trim(),
-                      'price': price,
-                      'categoryId': category.id,
-                      'isVeg': isVeg.toString(),
-                      if (pickedImage != null)
-                        'image': await MultipartFile.fromFile(pickedImage!.path),
-                    });
-                    final item = await widget.menuService.createMenuItem(form);
-                    if (dialogContext.mounted) {
-                      Navigator.pop(dialogContext, item);
-                    }
-                    if (mounted) setState(() => _items = [..._items, item]);
-                  } catch (_) {
-                    if (mounted) setState(() => _error = 'Unable to create menu item.');
-                  }
-                },
-                child: const Text('Add Item'),
+                onPressed: isSubmitting
+                    ? null
+                    : () async {
+                        final name = nameController.text.trim();
+                        final price = num.tryParse(priceController.text.trim());
+                        if (name.isEmpty || price == null || price < 0) {
+                          ScaffoldMessenger.of(screenContext).showSnackBar(
+                            const SnackBar(
+                              content: Text('Item name and valid price are required.'),
+                            ),
+                          );
+                          return;
+                        }
+
+                        setDialogState(() => isSubmitting = true);
+
+                        try {
+                          final form = FormData.fromMap({
+                            'name': name,
+                            'description': descriptionController.text.trim(),
+                            'price': price,
+                            'categoryId': category.id,
+                            'isVeg': isVeg.toString(),
+                            if (pickedImage != null)
+                              'image': await MultipartFile.fromFile(pickedImage!.path),
+                          });
+                          final item = await widget.menuService.createMenuItem(form);
+                          if (dialogContext.mounted) {
+                            Navigator.pop(dialogContext, item);
+                          }
+                        } catch (_) {
+                          if (dialogContext.mounted) {
+                            ScaffoldMessenger.of(screenContext).showSnackBar(
+                              const SnackBar(
+                                content: Text('Unable to create menu item. Please try again.'),
+                              ),
+                            );
+                          }
+                        } finally {
+                          if (context.mounted) {
+                            setDialogState(() => isSubmitting = false);
+                          }
+                        }
+                      },
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Add Item'),
               ),
             ],
           ),
         ),
       );
     } finally {
+      await Future<void>.delayed(const Duration(milliseconds: 250));
       nameController.dispose();
       descriptionController.dispose();
       priceController.dispose();
@@ -378,6 +452,11 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Vegetarian'),
                     value: isVeg,
+                    activeTrackColor: Colors.green,
+                    activeThumbColor: Colors.white,
+                    inactiveTrackColor: Colors.white,
+                    inactiveThumbColor: AppTheme.textMuted,
+                    trackOutlineColor: const WidgetStatePropertyAll(AppTheme.border),
                     onChanged: (value) => setDialogState(() => isVeg = value),
                   ),
                 ],
@@ -449,9 +528,18 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
   Future<void> _deleteItem(MenuItem item) async {
     try {
       await widget.menuService.deleteMenuItem(item.id);
+      if (mounted) {
+        ScaffoldMessenger.of(this.context).showSnackBar(
+          const SnackBar(content: Text('Item deleted successfully')),
+        );
+      }
       setState(() => _items.removeWhere((e) => e.id == item.id));
     } catch (_) {
-      setState(() => _error = 'Unable to delete item.');
+      if (mounted) {
+        ScaffoldMessenger.of(this.context).showSnackBar(
+          const SnackBar(content: Text('Unable to delete item. Please try again.')),
+        );
+      }
     }
   }
 
@@ -626,6 +714,7 @@ class _CategoryItemsPage extends StatefulWidget {
 
 class _CategoryItemsPageState extends State<_CategoryItemsPage> {
   late List<MenuItem> _items;
+  final Set<String> _updatingAvailability = <String>{};
 
   @override
   void initState() {
@@ -662,6 +751,9 @@ class _CategoryItemsPageState extends State<_CategoryItemsPage> {
                     final item = await widget.onAddItem();
                     if (item != null && mounted) {
                       setState(() => _items = [..._items, item]);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Item added successfully')),
+                      );
                     }
                   },
                   icon: const Icon(Icons.add),
@@ -709,10 +801,73 @@ class _CategoryItemsPageState extends State<_CategoryItemsPage> {
                                   style: const TextStyle(fontWeight: FontWeight.w700),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(item.isVeg ? 'Veg' : 'Non-Veg'),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.circle,
+                                      size: 8,
+                                      color: item.available
+                                          ? const Color(0xFFFE4101)
+                                          : AppTheme.textMuted,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      item.available ? 'Available' : 'Unavailable',
+                                      style: TextStyle(
+                                        color: item.available
+                                            ? const Color(0xFFFE4101)
+                                            : AppTheme.textMuted,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    if (item.isVeg) ...[
+                                      const Icon(
+                                        Icons.eco,
+                                        color: Colors.green,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    Text(item.isVeg ? 'Veg' : 'Non-Veg'),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '\u20b9${item.price}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Price',
+                                style: TextStyle(
+                                  color: AppTheme.textMuted,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Divider(height: 1),
+                      ),
+                      Row(
+                        children: [
                           IconButton(
                             tooltip: 'Edit item',
                             onPressed: () async {
@@ -739,31 +894,63 @@ class _CategoryItemsPageState extends State<_CategoryItemsPage> {
                             },
                             icon: const Icon(Icons.delete_outline, color: AppTheme.error),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: TextEditingController(text: '${item.price}'),
-                        decoration: const InputDecoration(labelText: 'Price'),
-                        keyboardType: TextInputType.number,
-                        onSubmitted: (value) => widget.onUpdatePrice(item, value),
-                      ),
-                      Row(
-                        children: [
-                          Text(item.available ? 'Available' : 'Unavailable'),
                           const Spacer(),
-                          Switch(
-                            value: item.available,
-                            onChanged: (_) async {
-                              final updated = await widget.onToggleAvailability(item);
-                              if (updated != null && mounted) {
-                                setState(() {
-                                  _items = _items
-                                      .map((entry) => entry.id == updated.id ? updated : entry)
-                                      .toList();
-                                });
-                              }
-                            },
+                          Semantics(
+                            button: true,
+                            label: item.available
+                                ? 'Set unavailable'
+                                : 'Set available',
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: _updatingAvailability.contains(item.id)
+                                  ? null
+                                  : () async {
+                                      final previous = item;
+                                      setState(() {
+                                        _updatingAvailability.add(item.id);
+                                        _items = _items
+                                            .map((entry) => entry.id == item.id
+                                                ? entry.copyWith(available: !entry.available)
+                                                : entry)
+                                            .toList();
+                                      });
+
+                                      final updated = await widget.onToggleAvailability(item);
+                                      if (!mounted) return;
+                                      setState(() {
+                                        _updatingAvailability.remove(item.id);
+                                        _items = _items
+                                            .map((entry) => entry.id == item.id
+                                                ? updated ?? previous
+                                                : entry)
+                                            .toList();
+                                      });
+                                    },
+                              child: Container(
+                                width: 54,
+                                height: 30,
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  color: item.available
+                                      ? const Color(0xFFFE4101)
+                                      : AppTheme.border,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: Align(
+                                  alignment: item.available
+                                      ? Alignment.centerRight
+                                      : Alignment.centerLeft,
+                                  child: Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),

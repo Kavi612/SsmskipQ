@@ -50,14 +50,16 @@ class FoodCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: item.isVeg ? Colors.green : Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
+                      item.isVeg
+                          ? const Icon(Icons.eco, color: Colors.green, size: 18)
+                          : Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
                     ],
                   ),
                   if (item.description.isNotEmpty) ...[
