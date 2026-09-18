@@ -375,16 +375,13 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                             Navigator.pop(dialogContext, item);
                           }
                         } catch (_) {
-                          if (dialogContext.mounted) {
+                          if (dialogContext.mounted && mounted) {
+                            setDialogState(() => isSubmitting = false);
                             ScaffoldMessenger.of(screenContext).showSnackBar(
                               const SnackBar(
                                 content: Text('Unable to create menu item. Please try again.'),
                               ),
                             );
-                          }
-                        } finally {
-                          if (context.mounted) {
-                            setDialogState(() => isSubmitting = false);
                           }
                         }
                       },
@@ -401,7 +398,6 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
         ),
       );
     } finally {
-      await Future<void>.delayed(const Duration(milliseconds: 250));
       nameController.dispose();
       descriptionController.dispose();
       priceController.dispose();
@@ -485,12 +481,6 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                     final updated = await widget.menuService.updateMenuItem(item.id, form);
                     if (dialogContext.mounted) {
                       Navigator.pop(dialogContext, updated);
-                    }
-                    if (mounted) {
-                      setState(() {
-                        final idx = _items.indexWhere((entry) => entry.id == item.id);
-                        if (idx >= 0) _items[idx] = updated;
-                      });
                     }
                   } catch (_) {
                     if (mounted) {
@@ -748,10 +738,11 @@ class _CategoryItemsPageState extends State<_CategoryItemsPage> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
                     final item = await widget.onAddItem();
                     if (item != null && mounted) {
                       setState(() => _items = [..._items, item]);
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         const SnackBar(content: Text('Item added successfully')),
                       );
                     }
@@ -871,14 +862,17 @@ class _CategoryItemsPageState extends State<_CategoryItemsPage> {
                           IconButton(
                             tooltip: 'Edit item',
                             onPressed: () async {
+                              final messenger = ScaffoldMessenger.of(context);
                               final updated = await widget.onEditItem(item);
-                              if (updated != null && mounted) {
-                                setState(() {
-                                  _items = _items
-                                      .map((entry) => entry.id == updated.id ? updated : entry)
-                                      .toList();
-                                });
-                              }
+                              if (updated == null || !mounted) return;
+                              setState(() {
+                                _items = _items
+                                    .map((entry) => entry.id == updated.id ? updated : entry)
+                                    .toList();
+                              });
+                              messenger.showSnackBar(
+                                const SnackBar(content: Text('Item updated')),
+                              );
                             },
                             icon: const Icon(Icons.edit_outlined),
                           ),
