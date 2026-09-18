@@ -27,7 +27,7 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
   bool _loading = true;
   String? _error;
   String? _actionLoadingId;
-  String _range = 'today';
+  String _statusFilter = 'all';
 
   @override
   void initState() {
@@ -95,16 +95,20 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
   }
 
   List<Order> get _filteredOrders {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final start = switch (_range) {
-      'week' => today.subtract(Duration(days: today.weekday - 1)),
-      'month' => DateTime(today.year, today.month),
-      'year' => DateTime(today.year),
-      _ => today,
-    };
     return _orders
-        .where((order) => !order.createdAt.isBefore(start))
+        .where((order) => isTodayIst(order.createdAt))
+        .where((order) {
+          switch (_statusFilter) {
+            case 'pending':
+              return order.status == OrderStatus.pending;
+            case 'completed':
+              return order.status == OrderStatus.pickedUp;
+            case 'cancelled':
+              return order.status == OrderStatus.cancelled;
+            default:
+              return true;
+          }
+        })
         .toList();
   }
 
@@ -121,22 +125,20 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('${_rangeLabel(_range)} · $active active · ${visibleOrders.length} orders'),
+          Text('Today · $active active · ${visibleOrders.length} orders'),
           const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: ['today', 'week', 'month', 'year']
-                  .map(
-                    (range) => Padding(
+              children: ['all', 'pending', 'completed', 'cancelled']
+                  .map((status) => Padding(
                       padding: const EdgeInsets.only(right: 10),
                       child: ChoiceChip(
-                        label: Text(_rangeLabel(range)),
-                        selected: _range == range,
-                        onSelected: (_) => setState(() => _range = range),
+                        label: Text(_statusLabel(status)),
+                        selected: _statusFilter == status,
+                        onSelected: (_) => setState(() => _statusFilter = status),
                       ),
-                    ),
-                  )
+                    ))
                   .toList(),
             ),
           ),
@@ -151,7 +153,7 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
           else if (visibleOrders.isEmpty)
             const Padding(
               padding: EdgeInsets.all(24),
-              child: Text('No orders found for this date range.'),
+              child: Text('No matching orders found for today.'),
             )
           else
             ...visibleOrders.map((order) {
@@ -230,16 +232,16 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
     );
   }
 
-  String _rangeLabel(String range) {
-    switch (range) {
-      case 'week':
-        return 'This Week';
-      case 'month':
-        return 'This Month';
-      case 'year':
-        return 'This Year';
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'pending':
+        return 'Pending';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
       default:
-        return 'Today';
+        return 'All';
     }
   }
 }

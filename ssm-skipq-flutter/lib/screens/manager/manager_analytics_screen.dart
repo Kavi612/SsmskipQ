@@ -27,7 +27,6 @@ enum _AnalyticsPeriod { day, month, year, custom }
 class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
   final DateFormat _dateFormat = DateFormat('d MMM yyyy');
   final DateFormat _monthFormat = DateFormat('MMMM yyyy');
-  final DateFormat _shortDateFormat = DateFormat('d MMM');
   List<Order> _orders = [];
   List<MenuItem> _menuItems = [];
   bool _loading = true;
@@ -39,6 +38,11 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
   DateTimeRange? _customRange;
   int _weekOffset = 0;
   int _monthStripYear = DateTime.now().year;
+
+  List<int> get _years {
+    final currentYear = DateTime.now().year;
+    return List.generate(currentYear - 2026 + 1, (index) => 2026 + index);
+  }
 
   @override
   void initState() {
@@ -52,22 +56,17 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
       _error = null;
     });
     try {
-      final results = await Future.wait([
-        widget.ordersService.fetchManagerOrders(),
-        widget.menuService.fetchMenuItems(),
-      ]);
-      _orders = results[0] as List<Order>;
-      _menuItems = results[1] as List<MenuItem>;
+      _orders = await widget.ordersService.fetchManagerOrders();
+      try {
+        _menuItems = await widget.menuService.fetchMenuItems();
+      } catch (_) {
+        _menuItems = [];
+      }
     } catch (_) {
       _error = 'Unable to load analytics data.';
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  List<int> get _years {
-    final currentYear = DateTime.now().year;
-    return [for (var year = 2026; year <= currentYear; year++) year];
   }
 
   DateTimeRange get _selectedRange {
@@ -94,34 +93,13 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
   }
 
   Future<void> _choosePeriod(_AnalyticsPeriod period) async {
-    final previousPeriod = _period;
-    if (mounted) setState(() => _period = period);
-
     switch (period) {
       case _AnalyticsPeriod.day:
-        final chosen = await _showDayPicker();
-        if (chosen != null && mounted) {
-          setState(() => _day = chosen);
-        } else if (mounted) {
-          setState(() => _period = previousPeriod);
-        }
+        setState(() => _period = period);
       case _AnalyticsPeriod.month:
-        final chosen = await _showMonthPicker();
-        if (chosen != null && mounted) {
-          setState(() {
-            _month = chosen;
-            _monthStripYear = chosen.year;
-          });
-        } else if (mounted) {
-          setState(() => _period = previousPeriod);
-        }
+        setState(() => _period = period);
       case _AnalyticsPeriod.year:
-        final chosen = await _showYearPicker();
-        if (chosen != null && mounted) {
-          setState(() => _year = chosen);
-        } else if (mounted) {
-          setState(() => _period = previousPeriod);
-        }
+        setState(() => _period = period);
       case _AnalyticsPeriod.custom:
         final chosen = await showDateRangePicker(
           context: context,
@@ -135,109 +113,11 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
           final start = DateTime(chosen.start.year, chosen.start.month, chosen.start.day);
           final end = DateTime(chosen.end.year, chosen.end.month, chosen.end.day).add(const Duration(days: 1));
           setState(() {
+            _period = period;
             _customRange = DateTimeRange(start: start, end: end);
           });
-        } else if (mounted) {
-          setState(() => _period = previousPeriod);
         }
     }
-  }
-
-  Future<DateTime?> _showDayPicker() {
-    var weekOffset = 0;
-    return showModalBottomSheet<DateTime>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (context, setSheetState) {
-          final today = DateTime.now();
-          final monday = DateTime(today.year, today.month, today.day)
-              .subtract(Duration(days: today.weekday - 1))
-              .add(Duration(days: weekOffset * 7));
-          final dates = [for (var index = 0; index < 7; index++) monday.add(Duration(days: index))];
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Choose a day', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(onPressed: () => setSheetState(() => weekOffset--), icon: const Icon(Icons.chevron_left)),
-                      Text('${_shortDateFormat.format(dates.first)} - ${_shortDateFormat.format(dates.last)}'),
-                      IconButton(onPressed: () => setSheetState(() => weekOffset++), icon: const Icon(Icons.chevron_right)),
-                    ],
-                  ),
-                  ...dates.map((date) => ListTile(
-                        dense: true,
-                        title: Text(DateFormat('EEEE, MMMM d, yyyy').format(date)),
-                        trailing: date == _day ? const Icon(Icons.check, color: AppTheme.primary) : null,
-                        onTap: () => Navigator.pop(sheetContext, date),
-                      )),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Future<DateTime?> _showMonthPicker() {
-    var selectedYear = _month.year;
-    return showModalBottomSheet<DateTime>(
-      context: context,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (context, setSheetState) => SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Choose a month', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                DropdownButton<int>(
-                  value: _years.contains(selectedYear) ? selectedYear : _years.last,
-                  items: _years.map((year) => DropdownMenuItem(value: year, child: Text('$year'))).toList(),
-                  onChanged: (value) => setSheetState(() => selectedYear = value ?? selectedYear),
-                ),
-                GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  children: [for (var month = 1; month <= 12; month++)
-                    TextButton(
-                      onPressed: () => Navigator.pop(sheetContext, DateTime(selectedYear, month)),
-                      child: Text(DateFormat('MMM').format(DateTime(2026, month))),
-                    )],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<int?> _showYearPicker() {
-    return showModalBottomSheet<int>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.all(16),
-          children: [
-            const Text('Choose a year', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-            ..._years.map((year) => ListTile(
-                  title: Text('$year'),
-                  trailing: year == _year ? const Icon(Icons.check, color: AppTheme.primary) : null,
-                  onTap: () => Navigator.pop(sheetContext, year),
-                )),
-          ],
-        ),
-      ),
-    );
   }
 
   String get _periodLabel {
@@ -261,60 +141,55 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
     final topItems = _rankItems(orders);
     final cancelledItems = _rankItems(cancelled);
 
-    final bodyChildren = <Widget>[
-      const Text('Analytics', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
-      const SizedBox(height: 4),
-      Text(_periodLabel, style: const TextStyle(color: AppTheme.textSecondary)),
-      const SizedBox(height: 16),
-      _filterBar(),
-      if (_period == _AnalyticsPeriod.day) _dayStrip(),
-      if (_period == _AnalyticsPeriod.month) _monthStrip(),
-      if (_period == _AnalyticsPeriod.custom && _customRange != null)
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: () => setState(() {
-              _period = _AnalyticsPeriod.day;
-              _customRange = null;
-              _day = DateTime.now();
-            }),
-            icon: const Icon(Icons.clear),
-            label: const Text('Clear selection'),
-          ),
-        ),
-      if (_loading)
-        const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
-      else if (_error != null)
-        Text(_error!, style: const TextStyle(color: AppTheme.error))
-      else ...[
-        _primaryCards(orders, completed, cancelled, revenue),
-        const SizedBox(height: 16),
-        _highlight(topItems),
-        const SizedBox(height: 16),
-        _section('Top 5 Most Ordered Items', _rankedList(topItems, empty: 'No order data available for this period')),
-        const SizedBox(height: 16),
-        _section('Cancellation Analytics', Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [Expanded(child: _miniMetric('Cancelled Orders', '${cancelled.length}')), const SizedBox(width: 10), Expanded(child: _miniMetric('Cancelled Item Quantities', '${cancelled.fold<int>(0, (sum, order) => sum + order.items.fold<int>(0, (itemSum, item) => itemSum + item.quantity))}'))]),
-            const SizedBox(height: 16),
-            const Text('Most cancelled food items', style: TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            _rankedList(cancelledItems, empty: 'No cancelled items for this period'),
-          ],
-        )),
-      ],
-    ];
-
     return RefreshIndicator(
       onRefresh: _load,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+      child: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: bodyChildren,
-        ),
+        children: [
+          const Text('Analytics', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          Text(_periodLabel, style: const TextStyle(color: AppTheme.textSecondary)),
+          const SizedBox(height: 16),
+          _filterBar(),
+          if (_period == _AnalyticsPeriod.day) _dayStrip(),
+          if (_period == _AnalyticsPeriod.month) _monthStrip(),
+          if (_period == _AnalyticsPeriod.year) _yearStrip(),
+          if (_period == _AnalyticsPeriod.custom && _customRange != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => setState(() {
+                  _period = _AnalyticsPeriod.day;
+                  _customRange = null;
+                  _day = DateTime.now();
+                }),
+                icon: const Icon(Icons.clear),
+                label: const Text('Clear selection'),
+              ),
+            ),
+          if (_loading)
+            const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
+          else if (_error != null)
+            Text(_error!, style: const TextStyle(color: AppTheme.error))
+          else ...[
+            _primaryCards(orders, completed, cancelled, revenue),
+            const SizedBox(height: 16),
+            _highlight(topItems),
+            const SizedBox(height: 16),
+            _section('Top 5 most ordered items', _rankedList(topItems, empty: 'No order data available for this period')),
+            const SizedBox(height: 16),
+            _section('Cancellation analytics', Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [Expanded(child: _miniMetric('Cancelled Orders', '${cancelled.length}')), const SizedBox(width: 10), Expanded(child: _miniMetric('Cancelled Item Quantities', '${cancelled.fold<int>(0, (sum, order) => sum + order.items.fold<int>(0, (itemSum, item) => itemSum + item.quantity))}'))]),
+                const SizedBox(height: 16),
+                const Text('Most cancelled food items', style: TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                _rankedList(cancelledItems, empty: 'No cancelled items for this period'),
+              ],
+            )),
+          ],
+        ],
       ),
     );
   }
@@ -391,6 +266,27 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
             _month = DateTime(_monthStripYear, month);
           }),
         )],
+    );
+  }
+
+  Widget _yearStrip() {
+    return _stripCard(
+      leading: IconButton(
+        onPressed: () {},
+        icon: const Icon(Icons.chevron_left),
+      ),
+      trailing: IconButton(
+        onPressed: () {},
+        icon: const Icon(Icons.chevron_right),
+      ),
+      children: _years.map((year) => _periodPill(
+        label: '$year',
+        selected: _year == year,
+        onTap: () => setState(() {
+          _period = _AnalyticsPeriod.year;
+          _year = year;
+        }),
+      )).toList(),
     );
   }
 
@@ -471,129 +367,42 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
     );
   }
 
-  Widget _section(String title, Widget child) => Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _section(String title, Widget child) => Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)), const SizedBox(height: 14), child])));
+
+  Widget _highlight(List<_RankedItem> items) => Card(color: AppTheme.primaryMuted, child: Padding(padding: const EdgeInsets.all(16), child: items.isEmpty ? const Text('No order data available for this period') : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Most Ordered Item', style: TextStyle(fontWeight: FontWeight.w700)), const SizedBox(height: 6), Row(children: [_itemImage(items.first, size: 72, radius: 10), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(items.first.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)), Text('${items.first.quantity} portions')]))])])));
+
+  Widget _rankedList(List<_RankedItem> items, {required String empty}) {
+    if (items.isEmpty) {
+      return Text(empty, style: const TextStyle(color: AppTheme.textSecondary));
+    }
+    return Column(
+      children: items.take(5).toList().asMap().entries.map((entry) {
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    title.toLowerCase().contains('top 5')
-                        ? Icons.format_list_numbered_rounded
-                        : Icons.trending_up_rounded,
-                    size: 18,
-                    color: AppTheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
+              CircleAvatar(
+                backgroundColor: AppTheme.primaryMuted,
+                child: Text('${entry.key + 1}'),
               ),
-              const SizedBox(height: 14),
-              child,
+              const SizedBox(width: 8),
+              _itemImage(entry.value, size: 48, radius: 8),
             ],
           ),
-        ),
-      );
-
-  Widget _highlight(List<_RankedItem> items) {
-    return Card(
-      key: const ValueKey('most_ordered_item_card'),
-      color: AppTheme.primaryMuted,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.emoji_events_rounded, size: 18, color: AppTheme.primary),
-                const SizedBox(width: 8),
-                const Text(
-                  'Most Ordered Item',
-                  key: ValueKey('most_ordered_item_title'),
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.primary,
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(0, 0),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text('View All'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (items.isEmpty)
-              const Text('No order data available for this period')
-            else ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.72),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.border),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _itemImage(items.first, size: 120, radius: 14),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            items.first.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-                          ),
-                          const SizedBox(height: 10),
-                          const Text(
-                            'Quantity Ordered',
-                            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${items.first.quantity}',
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              color: AppTheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+          title: Text(entry.value.name),
+          trailing: Text(
+            '${entry.value.quantity}',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        );
+      }).toList(),
     );
   }
 
-  Widget _itemImage(_RankedItem item, {double size = 48, double radius = 12}) {
-    final matchingItem = _menuItems.firstWhere(
-      (menuItem) => _normalizeName(menuItem.name) == _normalizeName(item.name),
+  Widget _itemImage(_RankedItem item, {required double size, required double radius}) {
+    final menuItem = _menuItems.firstWhere(
+      (candidate) => candidate.name.trim().toLowerCase() == item.name.trim().toLowerCase(),
       orElse: () => MenuItem(
         id: item.name,
         name: item.name,
@@ -606,175 +415,29 @@ class _ManagerAnalyticsScreenState extends State<ManagerAnalyticsScreen> {
         available: true,
       ),
     );
-
-    return MenuItemImage(
-      item: matchingItem,
-      width: size,
-      height: size,
-      borderRadius: radius,
-    );
+    return MenuItemImage(item: menuItem, width: size, height: size, borderRadius: radius);
   }
 
-  String _normalizeName(String input) => input
-      .trim()
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .toLowerCase();
-
-  Widget _rankedList(List<_RankedItem> items, {required String empty}) {
-    if (items.isEmpty) {
-      return Text(empty, style: const TextStyle(color: AppTheme.textSecondary));
-    }
-
-    return Column(
-      children: items.take(5).toList().asMap().entries.map((entry) {
-        final item = entry.value;
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: AppTheme.border.withValues(alpha: 0.8),
-              ),
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: AppTheme.primary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Text(
-                    '${entry.key + 1}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              _itemImage(item, size: 44, radius: 10),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.name,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Quantity Ordered',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '${item.quantity}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.primary,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _miniMetric(String label, String value) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppTheme.bgSubtle,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-      );
+  Widget _miniMetric(String label, String value) => Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: AppTheme.bgSubtle, borderRadius: BorderRadius.circular(10)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)), const SizedBox(height: 4), Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800))]));
 
   List<_RankedItem> _rankItems(List<Order> orders) {
     final quantities = <String, int>{};
     final latest = <String, DateTime>{};
     final imageUrls = <String, String>{};
-
     for (final order in orders) {
       for (final item in order.items) {
         quantities[item.name] = (quantities[item.name] ?? 0) + item.quantity;
-        if (!latest.containsKey(item.name) ||
-            order.createdAt.isAfter(latest[item.name]!)) {
-          latest[item.name] = order.createdAt;
-        }
-
-        final matchedMenuItem = _menuItems.firstWhere(
-          (menuItem) => _normalizeName(menuItem.name) == _normalizeName(item.name),
-          orElse: () => MenuItem(
-            id: item.name,
-            name: item.name,
-            description: '',
-            price: 0,
-            categoryId: '',
-            categoryName: '',
-            imageUrl: '',
-            isVeg: true,
-            available: true,
-          ),
+        if (!latest.containsKey(item.name) || order.createdAt.isAfter(latest[item.name]!)) latest[item.name] = order.createdAt;
+        final menuItem = _menuItems.firstWhere(
+          (candidate) => candidate.name.trim().toLowerCase() == item.name.trim().toLowerCase(),
+          orElse: () => MenuItem(id: item.name, name: item.name, description: '', price: 0, categoryId: '', categoryName: '', imageUrl: '', isVeg: true, available: true),
         );
-
-        if (!imageUrls.containsKey(item.name)) {
-          imageUrls[item.name] = matchedMenuItem.imageUrl;
-        }
+        imageUrls[item.name] = menuItem.imageUrl;
       }
     }
-
-    return quantities.entries
-        .map(
-          (entry) => _RankedItem(
-            entry.key,
-            entry.value,
-            latest[entry.key] ?? DateTime.now(),
-            imageUrl: imageUrls[entry.key] ?? '',
-          ),
-        )
-        .toList()
-      ..sort((a, b) => b.quantity != a.quantity
-          ? b.quantity.compareTo(a.quantity)
-          : b.latest.compareTo(a.latest));
+    return quantities.entries.map((entry) => _RankedItem(entry.key, entry.value, latest[entry.key]!, imageUrl: imageUrls[entry.key] ?? '')).toList()..sort((a, b) => b.quantity != a.quantity ? b.quantity.compareTo(a.quantity) : b.latest.compareTo(a.latest));
   }
+
 }
 
 class _RankedItem {
