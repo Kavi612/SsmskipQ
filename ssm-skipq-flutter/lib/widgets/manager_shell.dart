@@ -18,19 +18,27 @@ class ManagerShell extends StatefulWidget {
     required this.menuService,
     required this.feedbackService,
     required this.socketService,
+    this.initialTab = 0,
   });
 
   final OrdersService ordersService;
   final MenuService menuService;
   final FeedbackService feedbackService;
   final SocketService socketService;
+  final int initialTab;
 
   @override
   State<ManagerShell> createState() => _ManagerShellState();
 }
 
 class _ManagerShellState extends State<ManagerShell> {
-  int _index = 0;
+  late int _index;
+
+  @override
+  void initState() {
+    super.initState();
+    _index = widget.initialTab.clamp(0, 4);
+  }
 
   @override
   Widget build(BuildContext context) {

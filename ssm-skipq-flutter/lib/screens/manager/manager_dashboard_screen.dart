@@ -42,8 +42,8 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     widget.socketService.onOrderUpdated(_upsertOrder);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final window = context.read<OrderingWindowProvider>().window;
-      _openController.text = window.orderingOpenTime;
-      _closeController.text = window.orderingCloseTime;
+      _openController.text = _displayTime(window.orderingOpenTime);
+      _closeController.text = _displayTime(window.orderingCloseTime);
     });
   }
 
@@ -73,8 +73,8 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     });
     try {
       await context.read<OrderingWindowProvider>().updateWindow(
-            _openController.text,
-            _closeController.text,
+        _apiTime(_openController.text),
+        _apiTime(_closeController.text),
           );
       setState(() => _settingsMsg = 'Ordering window updated.');
     } catch (_) {
@@ -141,7 +141,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             ...recentOrders.take(5).map(_recentOrderRow),
           const SizedBox(height: 12),
           ElevatedButton(
-            onPressed: () => context.go('/manager/orders'),
+            onPressed: () => context.go('/manager?tab=orders'),
             child: const Text('VIEW ALL ORDERS'),
           ),
         ],
@@ -230,9 +230,9 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
           const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(child: _timeField(_openController, 'Open', Icons.wb_sunny_outlined)),
+              Expanded(child: _timeField(_openController, 'Open')),
               const SizedBox(width: 10),
-              Expanded(child: _timeField(_closeController, 'Close', Icons.nightlight_outlined)),
+              Expanded(child: _timeField(_closeController, 'Close')),
             ],
           ),
           const SizedBox(height: 14),
@@ -252,7 +252,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     );
   }
 
-  Widget _timeField(TextEditingController controller, String label, IconData icon) {
+  Widget _timeField(TextEditingController controller, String label) {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 2),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
@@ -260,12 +260,32 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         controller: controller,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: AppTheme.primary, size: 18),
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
           contentPadding: EdgeInsets.zero,
         ),
       ),
     );
+  }
+
+  String _displayTime(String value) {
+    final match = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(value.trim());
+    if (match == null) return value;
+    final hour = int.parse(match.group(1)!);
+    final meridiem = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour % 12 == 0 ? 12 : hour % 12;
+    return '${displayHour.toString().padLeft(2, '0')}:${match.group(2)} $meridiem';
+  }
+
+  String _apiTime(String value) {
+    final match = RegExp(r'^(\d{1,2}):(\d{2})\s*(AM|PM)?$', caseSensitive: false).firstMatch(value.trim());
+    if (match == null) return value.trim();
+    var hour = int.parse(match.group(1)!);
+    final meridiem = match.group(3)?.toUpperCase();
+    if (meridiem == 'PM' && hour < 12) hour += 12;
+    if (meridiem == 'AM' && hour == 12) hour = 0;
+    return '${hour.toString().padLeft(2, '0')}:${match.group(2)}';
   }
 
   Widget _recentOrderRow(Order order) {
@@ -286,7 +306,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             const Icon(Icons.chevron_right, color: AppTheme.textMuted),
           ],
         ),
-        onTap: () => context.go('/manager/orders'),
+        onTap: () => context.go('/manager?tab=orders'),
       ),
     );
   }

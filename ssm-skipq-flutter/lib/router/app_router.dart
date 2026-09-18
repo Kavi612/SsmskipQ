@@ -26,6 +26,8 @@ int studentTabFromQuery(String? tab) {
   }
 }
 
+int managerTabFromQuery(String? tab) => tab == 'orders' ? 1 : 0;
+
 GoRouter createRouter(AppServices services, AuthProvider auth) {
   return GoRouter(
     initialLocation: '/',
@@ -103,11 +105,12 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
       ),
       GoRoute(
         path: '/manager',
-        builder: (_, __) => ManagerShell(
+        builder: (_, state) => ManagerShell(
           ordersService: services.ordersService,
           menuService: services.menuService,
           feedbackService: services.feedbackService,
           socketService: services.socketService,
+          initialTab: managerTabFromQuery(state.uri.queryParameters['tab']),
         ),
       ),
     ],
