@@ -778,6 +778,10 @@ class _CategoryItemsPageState extends State<_CategoryItemsPage> {
                                 width: 56,
                                 height: 56,
                                 fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.restaurant,
+                                  size: 56,
+                                ),
                               ),
                             )
                           else
