@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
-import '../../models/dashboard_analytics.dart';
 import '../../models/order.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/ordering_window_provider.dart';
@@ -28,12 +27,7 @@ class ManagerDashboardScreen extends StatefulWidget {
 
 class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   List<Order> _orders = [];
-  DashboardAnalytics _analytics = const DashboardAnalytics();
   bool _loadingOrders = true;
-  bool _loadingAnalytics = false;
-  String _range = 'day';
-  DateTime? _customStartDate;
-  DateTime? _customEndDate;
   final _openController = TextEditingController(text: '09:30');
   final _closeController = TextEditingController(text: '11:30');
   bool _savingWindow = false;
@@ -62,7 +56,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         _orders.insert(0, order);
       }
     });
-    _loadAnalytics();
   }
 
   Future<void> _loadOrders() async {
@@ -70,30 +63,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
       _orders = await widget.ordersService.fetchManagerOrders();
     } finally {
       if (mounted) setState(() => _loadingOrders = false);
-    }
-    await _loadAnalytics();
-  }
-
-  Future<void> _loadAnalytics() async {
-    if (!mounted) return;
-
-    setState(() => _loadingAnalytics = true);
-
-    try {
-      final analytics = await widget.ordersService.fetchDashboardAnalytics(
-        range: _range,
-        startDate: _customStartDate?.toIso8601String().split('T').first,
-        endDate: _customEndDate?.toIso8601String().split('T').first,
-      );
-      if (mounted) {
-        setState(() => _analytics = analytics);
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _analytics = const DashboardAnalytics());
-      }
-    } finally {
-      if (mounted) setState(() => _loadingAnalytics = false);
     }
   }
 
@@ -113,26 +82,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     } finally {
       setState(() => _savingWindow = false);
     }
-  }
-
-  Future<void> _selectDate({required bool isStart}) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: (isStart ? _customStartDate : _customEndDate) ?? DateTime.now(),
-      firstDate: DateTime(2024),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
-    );
-
-    if (picked == null) return;
-
-    setState(() {
-      if (isStart) {
-        _customStartDate = picked;
-      } else {
-        _customEndDate = picked;
-      }
-    });
-    _loadAnalytics();
   }
 
   @override
@@ -183,168 +132,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
                 _statCard('Revenue', '₹$revenue', highlight: true),
               ],
             ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Analytics', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-                  const SizedBox(height: 12),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: ['day', 'week', 'month', 'year', 'custom']
-                          .map(
-                            (option) => Padding(
-                              padding: const EdgeInsets.only(right: 10),
-                              child: ChoiceChip(
-                                label: Text(_formatRangeLabel(option)),
-                                selected: _range == option,
-                                onSelected: (_) {
-                                  setState(() {
-                                    _range = option;
-                                    if (option != 'custom') {
-                                      _customStartDate = null;
-                                      _customEndDate = null;
-                                    }
-                                  });
-                                  _loadAnalytics();
-                                },
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                  if (_range == 'custom') ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => _selectDate(isStart: true),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: AppTheme.border),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _customStartDate == null
-                                    ? 'Start date'
-                                    : _customStartDate!.toIso8601String().split('T').first,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => _selectDate(isStart: false),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: AppTheme.border),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _customEndDate == null
-                                    ? 'End date'
-                                    : _customEndDate!.toIso8601String().split('T').first,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  if (_loadingAnalytics)
-                    const Center(child: CircularProgressIndicator())
-                  else ...[
-                    GridView.count(
-                      crossAxisCount: 3,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 1.35,
-                      children: [
-                        _analyticsStatCard('Orders', '${_analytics.totalOrders}'),
-                        _analyticsStatCard('Revenue', '₹${_analytics.totalRevenue}', highlight: true),
-                        _analyticsStatCard('Completed', '${_analytics.completedOrders}'),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Top 5 Best Sellers', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                    const SizedBox(height: 8),
-                    if (_analytics.topItems.isEmpty)
-                      const Text('No data for this range yet.')
-                    else
-                      ..._analytics.topItems.asMap().entries.map(
-                        (entry) {
-                          final index = entry.key;
-                          final item = entry.value;
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.bgSubtle,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 28,
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: const TextStyle(
-                                      color: AppTheme.primary,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    item.name,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 72,
-                                  child: Text(
-                                    '${item.quantity} sold',
-                                    textAlign: TextAlign.right,
-                                    style: const TextStyle(
-                                      color: AppTheme.textSecondary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 76,
-                                  child: Text(
-                                    '₹${item.revenue}',
-                                    textAlign: TextAlign.right,
-                                    style: const TextStyle(fontWeight: FontWeight.w700),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                  ],
-                ],
-              ),
-            ),
-          ),
           const SizedBox(height: 16),
           Card(
             child: Padding(
@@ -416,23 +203,6 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     );
   }
 
-  String _formatRangeLabel(String option) {
-    switch (option) {
-      case 'day':
-        return 'Day';
-      case 'week':
-        return 'Week';
-      case 'month':
-        return 'Month';
-      case 'year':
-        return 'Year';
-      case 'custom':
-        return 'Custom';
-      default:
-        return option;
-    }
-  }
-
   Widget _statCard(String label, String value, {bool highlight = false}) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -452,23 +222,4 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
     );
   }
 
-  Widget _analyticsStatCard(String label, String value, {bool highlight = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: highlight ? AppTheme.primaryMuted : Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-        ],
-      ),
-    );
-  }
 }

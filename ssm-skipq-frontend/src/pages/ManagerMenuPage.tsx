@@ -803,11 +803,11 @@ const ManagerMenuPage = () => {
                         <h3 className={styles.itemName}>{item.name}</h3>
                         <p className={styles.category}>{item.categoryName}</p>
                       </div>
-                      <span
-                        className={`${styles.vegBadge} ${item.isVeg ? styles.vegBadgeVeg : styles.vegBadgeNonVeg}`}
-                      >
-                        {item.isVeg ? 'Veg' : 'Non-Veg'}
-                      </span>
+                      {item.isVeg && (
+                        <span className={`${styles.vegBadge} ${styles.vegBadgeVeg}`}>
+                          Veg
+                        </span>
+                      )}
                     </div>
 
                     {item.description && (

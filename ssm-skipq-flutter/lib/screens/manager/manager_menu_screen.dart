@@ -234,8 +234,8 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                 ],
               ),
             );
-            if (confirmed != true) return;
-            await _deleteItem(item);
+            if (confirmed != true) return false;
+            return _deleteItem(item);
           },
           onUpdatePrice: (item, price) => _updatePrice(item, price),
           onToggleAvailability: _toggleAvailability,
@@ -280,225 +280,27 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
         ),
       ),
     );
+    if (mounted) await _load();
   }
 
-  Future<MenuItem?> _showAddItemDialog(Category category) async {
-    final screenContext = context;
-    final nameController = TextEditingController();
-    final descriptionController = TextEditingController();
-    final priceController = TextEditingController();
-    var isVeg = true;
-    XFile? pickedImage;
-    var isSubmitting = false;
-    try {
-      return await showDialog<MenuItem>(
-        context: context,
-        builder: (dialogContext) => StatefulBuilder(
-          builder: (context, setDialogState) => AlertDialog(
-            title: Text('Add Menu Item to ${category.name}'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: descriptionController,
-                    decoration: const InputDecoration(labelText: 'Description'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: priceController,
-                    decoration: const InputDecoration(labelText: 'Price'),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final file = await ImagePicker().pickImage(source: ImageSource.gallery);
-                      if (file != null) setDialogState(() => pickedImage = file);
-                    },
-                    icon: const Icon(Icons.image_outlined),
-                    label: Text(pickedImage == null ? 'Add Image' : 'Image Selected'),
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Vegetarian'),
-                    value: isVeg,
-                    activeTrackColor: Colors.green,
-                    activeThumbColor: Colors.white,
-                    inactiveTrackColor: Colors.white,
-                    inactiveThumbColor: AppTheme.textMuted,
-                    trackOutlineColor: const WidgetStatePropertyAll(AppTheme.border),
-                    onChanged: (value) => setDialogState(() => isVeg = value),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: isSubmitting
-                    ? null
-                    : () async {
-                        final name = nameController.text.trim();
-                        final price = num.tryParse(priceController.text.trim());
-                        if (name.isEmpty || price == null || price < 0) {
-                          ScaffoldMessenger.of(screenContext).showSnackBar(
-                            const SnackBar(
-                              content: Text('Item name and valid price are required.'),
-                            ),
-                          );
-                          return;
-                        }
-
-                        setDialogState(() => isSubmitting = true);
-
-                        try {
-                          final form = FormData.fromMap({
-                            'name': name,
-                            'description': descriptionController.text.trim(),
-                            'price': price,
-                            'categoryId': category.id,
-                            'isVeg': isVeg.toString(),
-                            if (pickedImage != null)
-                              'image': await MultipartFile.fromFile(pickedImage!.path),
-                          });
-                          final item = await widget.menuService.createMenuItem(form);
-                          if (dialogContext.mounted) {
-                            Navigator.pop(dialogContext, item);
-                          }
-                        } catch (_) {
-                          if (dialogContext.mounted && mounted) {
-                            setDialogState(() => isSubmitting = false);
-                            ScaffoldMessenger.of(screenContext).showSnackBar(
-                              const SnackBar(
-                                content: Text('Unable to create menu item. Please try again.'),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                child: isSubmitting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Add Item'),
-              ),
-            ],
-          ),
-        ),
-      );
-    } finally {
-      nameController.dispose();
-      descriptionController.dispose();
-      priceController.dispose();
-    }
+  Future<MenuItem?> _showAddItemDialog(Category category) {
+    return showDialog<MenuItem>(
+      context: context,
+      builder: (_) => _MenuItemFormDialog(
+        menuService: widget.menuService,
+        category: category,
+      ),
+    );
   }
 
-  Future<MenuItem?> _showEditItemDialog(MenuItem item) async {
-    final nameController = TextEditingController(text: item.name);
-    final descriptionController = TextEditingController(text: item.description);
-    final priceController = TextEditingController(text: '${item.price}');
-    var isVeg = item.isVeg;
-    XFile? pickedImage;
-    try {
-      return await showDialog<MenuItem>(
-        context: context,
-        builder: (dialogContext) => StatefulBuilder(
-          builder: (context, setDialogState) => AlertDialog(
-            title: const Text('Edit Item'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: descriptionController,
-                    decoration: const InputDecoration(labelText: 'Description'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: priceController,
-                    decoration: const InputDecoration(labelText: 'Price'),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final file = await ImagePicker().pickImage(source: ImageSource.gallery);
-                      if (file != null) setDialogState(() => pickedImage = file);
-                    },
-                    icon: const Icon(Icons.image_outlined),
-                    label: Text(pickedImage == null ? 'Change Image' : 'Image Selected'),
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Vegetarian'),
-                    value: isVeg,
-                    activeTrackColor: Colors.green,
-                    activeThumbColor: Colors.white,
-                    inactiveTrackColor: Colors.white,
-                    inactiveThumbColor: AppTheme.textMuted,
-                    trackOutlineColor: const WidgetStatePropertyAll(AppTheme.border),
-                    onChanged: (value) => setDialogState(() => isVeg = value),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final name = nameController.text.trim();
-                  final price = num.tryParse(priceController.text.trim());
-                  if (name.isEmpty || price == null || price < 0) return;
-                  try {
-                    final form = FormData.fromMap({
-                      'name': name,
-                      'description': descriptionController.text.trim(),
-                      'price': price,
-                      'categoryId': item.categoryId,
-                      'isVeg': isVeg.toString(),
-                      if (pickedImage != null)
-                        'image': await MultipartFile.fromFile(pickedImage!.path),
-                    });
-                    final updated = await widget.menuService.updateMenuItem(item.id, form);
-                    if (dialogContext.mounted) {
-                      Navigator.pop(dialogContext, updated);
-                    }
-                  } catch (_) {
-                    if (mounted) {
-                      setState(() => _error = 'Unable to update menu item.');
-                    }
-                  }
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          ),
-        ),
-      );
-    } finally {
-      nameController.dispose();
-      descriptionController.dispose();
-      priceController.dispose();
-    }
+  Future<MenuItem?> _showEditItemDialog(MenuItem item) {
+    return showDialog<MenuItem>(
+      context: context,
+      builder: (_) => _MenuItemFormDialog(
+        menuService: widget.menuService,
+        item: item,
+      ),
+    );
   }
 
   Future<MenuItem?> _toggleAvailability(MenuItem item) async {
@@ -515,21 +317,12 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
     }
   }
 
-  Future<void> _deleteItem(MenuItem item) async {
+  Future<bool> _deleteItem(MenuItem item) async {
     try {
       await widget.menuService.deleteMenuItem(item.id);
-      if (mounted) {
-        ScaffoldMessenger.of(this.context).showSnackBar(
-          const SnackBar(content: Text('Item deleted successfully')),
-        );
-      }
-      setState(() => _items.removeWhere((e) => e.id == item.id));
+      return true;
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(this.context).showSnackBar(
-          const SnackBar(content: Text('Unable to delete item. Please try again.')),
-        );
-      }
+      return false;
     }
   }
 
@@ -675,6 +468,158 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
   }
 }
 
+class _MenuItemFormDialog extends StatefulWidget {
+  const _MenuItemFormDialog({
+    required this.menuService,
+    this.category,
+    this.item,
+  });
+
+  final MenuService menuService;
+  final Category? category;
+  final MenuItem? item;
+
+  @override
+  State<_MenuItemFormDialog> createState() => _MenuItemFormDialogState();
+}
+
+class _MenuItemFormDialogState extends State<_MenuItemFormDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _priceController;
+  late bool _isVeg;
+  XFile? _pickedImage;
+  bool _isSubmitting = false;
+
+  bool get _isEditing => widget.item != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.item?.name ?? '');
+    _descriptionController = TextEditingController(text: widget.item?.description ?? '');
+    _priceController = TextEditingController(text: widget.item == null ? '' : '${widget.item!.price}');
+    _isVeg = widget.item?.isVeg ?? true;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final name = _nameController.text.trim();
+    final price = num.tryParse(_priceController.text.trim());
+    if (name.isEmpty || price == null || price < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Item name and valid price are required.')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final form = FormData.fromMap({
+        'name': name,
+        'description': _descriptionController.text.trim(),
+        'price': price,
+        'categoryId': widget.item?.categoryId ?? widget.category!.id,
+        'isVeg': _isVeg.toString(),
+        if (_pickedImage != null)
+          'image': await MultipartFile.fromFile(_pickedImage!.path),
+      });
+      final result = _isEditing
+          ? await widget.menuService.updateMenuItem(widget.item!.id, form)
+          : await widget.menuService.createMenuItem(form);
+      if (!mounted) return;
+      Navigator.of(context).pop(result);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isEditing
+                ? 'Unable to update menu item. Please try again.'
+                : 'Unable to create menu item. Please try again.',
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(_isEditing ? 'Edit Item' : 'Add Menu Item to ${widget.category!.name}'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _priceController,
+              decoration: const InputDecoration(labelText: 'Price'),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () async {
+                final file = await ImagePicker().pickImage(source: ImageSource.gallery);
+                if (!mounted || file == null) return;
+                setState(() => _pickedImage = file);
+              },
+              icon: const Icon(Icons.image_outlined),
+              label: Text(_pickedImage == null
+                  ? (_isEditing ? 'Change Image' : 'Add Image')
+                  : 'Image Selected'),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Vegetarian'),
+              value: _isVeg,
+              activeTrackColor: Colors.green,
+              activeThumbColor: Colors.white,
+              inactiveTrackColor: Colors.white,
+              inactiveThumbColor: AppTheme.textMuted,
+              trackOutlineColor: const WidgetStatePropertyAll(AppTheme.border),
+              onChanged: (value) => setState(() => _isVeg = value),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _isSubmitting ? null : _submit,
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(_isEditing ? 'Save' : 'Add Item'),
+        ),
+      ],
+    );
+  }
+}
+
 class _CategoryItemsPage extends StatefulWidget {
   const _CategoryItemsPage({
     required this.category,
@@ -692,7 +637,7 @@ class _CategoryItemsPage extends StatefulWidget {
   final List<MenuItem> items;
   final Future<MenuItem?> Function() onAddItem;
   final Future<MenuItem?> Function(MenuItem item) onEditItem;
-  final Future<void> Function(MenuItem item) onDeleteItem;
+  final Future<bool> Function(MenuItem item) onDeleteItem;
   final Future<void> Function(MenuItem item, String price) onUpdatePrice;
   final Future<MenuItem?> Function(MenuItem item) onToggleAvailability;
   final VoidCallback onEditCategory;
@@ -828,8 +773,8 @@ class _CategoryItemsPageState extends State<_CategoryItemsPage> {
                                         size: 16,
                                       ),
                                       const SizedBox(width: 4),
+                                      const Text('Veg'),
                                     ],
-                                    Text(item.isVeg ? 'Veg' : 'Non-Veg'),
                                   ],
                                 ),
                               ],
@@ -883,12 +828,15 @@ class _CategoryItemsPageState extends State<_CategoryItemsPage> {
                           IconButton(
                             tooltip: 'Delete item',
                             onPressed: () async {
-                              await widget.onDeleteItem(item);
-                              if (mounted) {
-                                setState(() {
-                                  _items = _items.where((entry) => entry.id != item.id).toList();
-                                });
-                              }
+                              final messenger = ScaffoldMessenger.of(context);
+                              final deleted = await widget.onDeleteItem(item);
+                              if (!deleted || !mounted) return;
+                              setState(() {
+                                _items = _items.where((entry) => entry.id != item.id).toList();
+                              });
+                              messenger.showSnackBar(
+                                const SnackBar(content: Text('Item deleted')),
+                              );
                             },
                             icon: const Icon(Icons.delete_outline, color: AppTheme.error),
                           ),

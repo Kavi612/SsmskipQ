@@ -68,8 +68,6 @@ const StudentHomePage = () => {
 
     if (vegFilter === 'veg') {
       result = result.filter((item) => item.isVeg);
-    } else if (vegFilter === 'nonveg') {
-      result = result.filter((item) => !item.isVeg);
     }
 
     const query = searchQuery.trim().toLowerCase();
@@ -139,14 +137,14 @@ const StudentHomePage = () => {
 
       {showFilters && (
         <div className={styles.filterPanel}>
-          {(['all', 'veg', 'nonveg'] as VegFilter[]).map((f) => (
+          {(['all', 'veg'] as VegFilter[]).map((f) => (
             <button
               key={f}
               type="button"
               className={`${styles.filterChip} ${vegFilter === f ? styles.filterChipActive : ''}`}
               onClick={() => setVegFilter(f)}
             >
-              {f === 'all' ? 'All' : f === 'veg' ? 'Veg' : 'Non-Veg'}
+              {f === 'all' ? 'All' : 'Veg'}
             </button>
           ))}
         </div>

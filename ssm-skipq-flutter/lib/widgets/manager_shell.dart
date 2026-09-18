@@ -9,6 +9,7 @@ import '../screens/manager/manager_feedback_screen.dart';
 import '../screens/manager/manager_menu_screen.dart';
 import '../screens/manager/manager_orders_screen.dart';
 import '../screens/manager/manager_profile_screen.dart';
+import '../screens/manager/manager_analytics_screen.dart';
 
 class ManagerShell extends StatefulWidget {
   const ManagerShell({
@@ -44,11 +45,24 @@ class _ManagerShellState extends State<ManagerShell> {
       ),
       ManagerMenuScreen(menuService: widget.menuService),
       ManagerFeedbackScreen(feedbackService: widget.feedbackService),
-      const ManagerProfileScreen(),
+      ManagerAnalyticsScreen(ordersService: widget.ordersService),
     ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Manager Portal')),
+      appBar: AppBar(
+        title: const Text('Manager Portal'),
+        actions: [
+          IconButton(
+            tooltip: 'Profile',
+            icon: const Icon(Icons.person_outline),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ManagerProfileScreen()),
+              );
+            },
+          ),
+        ],
+      ),
       body: IndexedStack(index: _index, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
@@ -58,7 +72,7 @@ class _ManagerShellState extends State<ManagerShell> {
           NavigationDestination(icon: Icon(Icons.list_alt_outlined), selectedIcon: Icon(Icons.list_alt), label: 'Orders'),
           NavigationDestination(icon: Icon(Icons.restaurant_menu_outlined), selectedIcon: Icon(Icons.restaurant_menu), label: 'Master'),
           NavigationDestination(icon: Icon(Icons.message_outlined), selectedIcon: Icon(Icons.message), label: 'Feedback'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+          NavigationDestination(icon: Icon(Icons.analytics_outlined), selectedIcon: Icon(Icons.analytics), label: 'Analytics'),
         ],
       ),
     );
