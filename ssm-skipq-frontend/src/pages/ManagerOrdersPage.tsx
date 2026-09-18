@@ -188,6 +188,10 @@ const ManagerOrdersPage = () => {
                   </span>
                 </div>
 
+                {order.status === 'CANCELLED' && (
+                  <p className={styles.student}>Cancelled by student</p>
+                )}
+
                 {order.student && (
                   <p className={styles.student}>
                     {order.student.name} · {order.student.mobile}

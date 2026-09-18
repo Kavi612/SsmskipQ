@@ -86,6 +86,14 @@ class OrdersService {
     return Order.fromJson(order as Map<String, dynamic>);
   }
 
+  Future<Order> cancelOrder(String orderId) async {
+    final response = await _api.dio.patch<Map<String, dynamic>>(
+      '/orders/$orderId/cancel',
+    );
+    final order = (response.data?['data'] as Map<String, dynamic>)['order'];
+    return Order.fromJson(order as Map<String, dynamic>);
+  }
+
   Future<Order> updatePayment(String orderId, PaymentStatus status) async {
     final response = await _api.dio.patch<Map<String, dynamic>>(
       '/orders/$orderId/payment',

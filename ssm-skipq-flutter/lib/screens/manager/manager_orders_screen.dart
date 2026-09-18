@@ -174,7 +174,9 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        formatIstDateTime(order.createdAt),
+                        order.status == OrderStatus.cancelled
+                            ? 'Cancelled by student · ${formatIstDateTime(order.createdAt)}'
+                            : formatIstDateTime(order.createdAt),
                         style: const TextStyle(color: AppTheme.textSecondary),
                       ),
                       const SizedBox(height: 8),

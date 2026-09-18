@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
-import { fetchOrder } from '../services/orders';
+import { cancelOrder, fetchOrder } from '../services/orders';
 import { joinStudentRoom } from '../services/socket';
 import type { Order, OrderStatus } from '../types/order';
 import styles from './StudentTrackOrderPage.module.css';
@@ -53,6 +53,7 @@ const StudentTrackOrderPage = () => {
   const initialOrder = location.state?.order as Order | undefined;
   const [order, setOrder] = useState<Order | undefined>(initialOrder);
   const [error, setError] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (!orderId) {
@@ -100,6 +101,18 @@ const StudentTrackOrderPage = () => {
 
   if (!order) return null;
 
+  const handleCancel = async () => {
+    if (!orderId || !window.confirm('Cancel this order? This cannot be undone.')) return;
+    setCancelling(true);
+    try {
+      setOrder(await cancelOrder(orderId));
+    } catch {
+      setError('Unable to cancel order. It may already be accepted.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const currentRank = STATUS_RANK[order.status];
 
   return (
@@ -112,6 +125,12 @@ const StudentTrackOrderPage = () => {
           <strong className={styles.token}>{order.tokenNumber}</strong>
           <p className={styles.message}>{statusMessage(order.status)}</p>
         </section>
+
+        {order.status === 'PENDING' && (
+          <button type="button" onClick={handleCancel} disabled={cancelling}>
+            {cancelling ? 'Cancelling...' : 'Cancel Order'}
+          </button>
+        )}
 
         <section className={styles.section} aria-label="Order status">
           <h2 className={styles.sectionTitle}>Order Status</h2>

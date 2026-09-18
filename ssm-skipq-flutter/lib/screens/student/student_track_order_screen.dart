@@ -31,14 +31,13 @@ class StudentTrackOrderScreen extends StatefulWidget {
 class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
   Order? _order;
   bool _loading = true;
+  bool _cancelling = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _order = widget.initialOrder != null && widget.initialOrder!.status.isActiveOrderStatus
-        ? widget.initialOrder
-        : null;
+    _order = widget.initialOrder;
     _loading = _order == null;
     _refresh();
     widget.socketService.joinStudentRoom();
@@ -54,7 +53,7 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
   void _handleOrderUpdated(Order updated) {
     if (updated.id == widget.orderId && mounted) {
       setState(() {
-        _order = updated.status.isActiveOrderStatus ? updated : null;
+        _order = updated;
         _loading = false;
         _error = null;
       });
@@ -64,7 +63,8 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
   Future<void> _refresh() async {
     try {
       final orders = await widget.ordersService.fetchMyOrders();
-      final latest = getCurrentActiveOrderForStudent(orders, orderId: widget.orderId);
+      final matches = orders.where((order) => order.id == widget.orderId).toList();
+      final latest = matches.isEmpty ? null : matches.first;
       if (!mounted) return;
       setState(() {
         _order = latest;
@@ -94,6 +94,46 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
         return 'Order completed. Enjoy your meal!';
       case OrderStatus.cancelled:
         return 'This order has been cancelled.';
+    }
+  }
+
+  Future<void> _cancelOrder() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cancel this order?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep Order'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Cancel Order'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _cancelling = true);
+    try {
+      final updated = await widget.ordersService.cancelOrder(widget.orderId);
+      if (!mounted) return;
+      setState(() {
+        _order = updated;
+        _cancelling = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Order cancelled')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _cancelling = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to cancel order. It may already be accepted.')),
+      );
     }
   }
 
@@ -228,6 +268,14 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
               ),
               ),
             ),
+            if (order.status == OrderStatus.pending) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _cancelling ? null : _cancelOrder,
+                icon: const Icon(Icons.cancel_outlined),
+                label: Text(_cancelling ? 'Cancelling…' : 'Cancel Order'),
+              ),
+            ],
             const SizedBox(height: 16),
             Card(
               margin: EdgeInsets.zero,
@@ -290,13 +338,5 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
         ),
       ),
     );
-  }
-}
-
-extension _FirstOrNull<E> on Iterable<E> {
-  E? get firstOrNull {
-    final iterator = this.iterator;
-    if (!iterator.moveNext()) return null;
-    return iterator.current;
   }
 }

@@ -214,6 +214,7 @@ class Order {
     required this.tokenNumber,
     required this.createdAt,
     this.student,
+    this.cancelledBy,
     this.hasFeedback = false,
     this.feedback,
   });
@@ -228,6 +229,7 @@ class Order {
   final String tokenNumber;
   final DateTime createdAt;
   final OrderStudent? student;
+  final String? cancelledBy;
   final bool hasFeedback;
   final SubmittedFeedback? feedback;
 
@@ -248,6 +250,7 @@ class Order {
       student: json['student'] != null
           ? OrderStudent.fromJson(json['student'] as Map<String, dynamic>)
           : null,
+          cancelledBy: json['cancelledBy'] as String?,
       hasFeedback: json['hasFeedback'] as bool? ?? false,
         feedback: json['feedback'] != null
           ? SubmittedFeedback.fromJson(json['feedback'] as Map<String, dynamic>)
@@ -272,6 +275,7 @@ class Order {
       tokenNumber: tokenNumber,
       createdAt: createdAt,
       student: student,
+      cancelledBy: cancelledBy,
       hasFeedback: hasFeedback ?? this.hasFeedback,
       feedback: feedback ?? this.feedback,
     );

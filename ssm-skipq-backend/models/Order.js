@@ -67,6 +67,10 @@ const orderSchema = new mongoose.Schema(
       ],
       default: 'PENDING',
     },
+    cancelledBy: {
+      type: String,
+      enum: ['STUDENT'],
+    },
     tokenNumber: {
       type: String,
       required: [true, 'Token number is required'],

@@ -6,6 +6,7 @@ import {
   getManagerOrders,
   getOrderAnalytics,
   advanceOrderStatus,
+  cancelOrder,
   updateOrderPayment,
 } from '../controllers/orderController.js';
 import {
@@ -39,6 +40,12 @@ router.patch(
   authenticate,
   authorize('manager'),
   advanceOrderStatus,
+);
+router.patch(
+  '/:id/cancel',
+  authenticate,
+  authorize('student'),
+  cancelOrder,
 );
 router.patch(
   '/:id/payment',

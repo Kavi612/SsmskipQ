@@ -18,6 +18,13 @@ export const fetchOrder = async (orderId: string) => {
   return data.data.order;
 };
 
+export const cancelOrder = async (orderId: string) => {
+  const { data } = await api.patch<{ success: boolean; data: { order: Order } }>(
+    `/orders/${orderId}/cancel`,
+  );
+  return data.data.order;
+};
+
 export const createOrder = async (payload: CreateOrderPayload) => {
   const { data } = await api.post<OrderResponse>('/orders', payload);
   return data.data;

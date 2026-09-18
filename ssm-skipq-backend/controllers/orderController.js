@@ -76,6 +76,7 @@ export const formatOrder = (order) => ({
   paymentMethod: order.paymentMethod,
   paymentStatus: order.paymentStatus,
   status: order.status,
+  cancelledBy: order.cancelledBy,
   tokenNumber: order.tokenNumber,
   createdAt: order.createdAt,
 });
@@ -510,6 +511,51 @@ export const advanceOrderStatus = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Unable to update order status',
+    });
+  }
+};
+
+export const cancelOrder = async (req, res) => {
+  try {
+    const order = await Order.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        studentId: req.user.id,
+        status: 'PENDING',
+      },
+      { $set: { status: 'CANCELLED', cancelledBy: 'STUDENT' } },
+      { new: true },
+    ).populate('studentId', 'name mobile');
+
+    if (order) {
+      emitOrderUpdate(req, order);
+      return res.json({
+        success: true,
+        data: { order: formatOrder(order) },
+      });
+    }
+
+    const existing = await Order.findOne({
+      _id: req.params.id,
+      studentId: req.user.id,
+    }).select('status');
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    return res.status(409).json({
+      success: false,
+      message: 'Only pending orders can be cancelled.',
+    });
+  } catch (error) {
+    console.error('Cancel order error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to cancel order',
     });
   }
 };
