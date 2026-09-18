@@ -22,13 +22,7 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
   bool _loading = true;
   String? _error;
 
-  final _nameController = TextEditingController();
-  final _descController = TextEditingController();
-  final _priceController = TextEditingController();
   String? _categoryId;
-  bool _isVeg = true;
-  XFile? _pickedImage;
-  bool _formLoading = false;
   static const _categoryIcons = CategoryIcons.byKey;
 
   @override
@@ -52,43 +46,6 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
     } finally {
       setState(() => _loading = false);
     }
-  }
-
-  Future<void> _createItem() async {
-    if (_categoryId == null) return;
-    if (_categories.isEmpty) {
-      setState(() => _error = 'Please create a category before adding menu items.');
-      return;
-    }
-    setState(() => _formLoading = true);
-    try {
-      final form = FormData.fromMap({
-        'name': _nameController.text.trim(),
-        'description': _descController.text.trim(),
-        'price': _priceController.text.trim(),
-        'categoryId': _categoryId,
-        'isVeg': _isVeg.toString(),
-        if (_pickedImage != null)
-          'image': await MultipartFile.fromFile(_pickedImage!.path),
-      });
-      final item = await widget.menuService.createMenuItem(form);
-      setState(() {
-        _items = [..._items, item]..sort((a, b) => a.name.compareTo(b.name));
-        _nameController.clear();
-        _descController.clear();
-        _priceController.clear();
-        _pickedImage = null;
-      });
-    } catch (_) {
-      setState(() => _error = 'Unable to create menu item.');
-    } finally {
-      setState(() => _formLoading = false);
-    }
-  }
-
-  List<MenuItem> get _visibleItems {
-    if (_categoryId == null) return _items;
-    return _items.where((item) => item.categoryId == _categoryId).toList();
   }
 
   Future<void> _showCategoryDialog({Category? category}) async {
@@ -218,15 +175,52 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
           category: category,
           items: _items.where((item) => item.categoryId == category.id).toList(),
           onAddItem: () => _showAddItemDialog(category),
+          onEditItem: _showEditItemDialog,
+          onDeleteItem: (item) async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Delete this item?'),
+                content: const Text('This cannot be undone.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed != true) return;
+            await _deleteItem(item);
+            if (mounted) Navigator.pop(context);
+          },
           onUpdatePrice: (item, price) => _updatePrice(item, price),
           onToggleAvailability: _toggleAvailability,
           onEditCategory: () => _showCategoryDialog(category: category),
           onDeleteCategory: () async {
+            final categoryItems = _items.where((item) => item.categoryId == category.id).toList();
+            if (categoryItems.isNotEmpty) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Can't delete — this category still has items in it. Remove or move the items first.",
+                    ),
+                  ),
+                );
+              }
+              return;
+            }
+
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (dialogContext) => AlertDialog(
-                title: const Text('Delete Category?'),
-                content: Text('Delete ${category.name}? Menu items must be moved or deleted first.'),
+                title: const Text('Delete this category?'),
+                content: const Text('This cannot be undone.'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogContext, false),
@@ -254,6 +248,7 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
     final descriptionController = TextEditingController();
     final priceController = TextEditingController();
     var isVeg = true;
+    XFile? pickedImage;
     try {
       return await showDialog<MenuItem>(
         context: context,
@@ -279,6 +274,15 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                     decoration: const InputDecoration(labelText: 'Price'),
                     keyboardType: TextInputType.number,
                   ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final file = await ImagePicker().pickImage(source: ImageSource.gallery);
+                      if (file != null) setDialogState(() => pickedImage = file);
+                    },
+                    icon: const Icon(Icons.image_outlined),
+                    label: Text(pickedImage == null ? 'Add Image' : 'Image Selected'),
+                  ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Vegetarian'),
@@ -299,15 +303,16 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                   final price = num.tryParse(priceController.text.trim());
                   if (name.isEmpty || price == null || price < 0) return;
                   try {
-                    final item = await widget.menuService.createMenuItem(
-                      FormData.fromMap({
-                        'name': name,
-                        'description': descriptionController.text.trim(),
-                        'price': price,
-                        'categoryId': category.id,
-                        'isVeg': isVeg.toString(),
-                      }),
-                    );
+                    final form = FormData.fromMap({
+                      'name': name,
+                      'description': descriptionController.text.trim(),
+                      'price': price,
+                      'categoryId': category.id,
+                      'isVeg': isVeg.toString(),
+                      if (pickedImage != null)
+                        'image': await MultipartFile.fromFile(pickedImage!.path),
+                    });
+                    final item = await widget.menuService.createMenuItem(form);
                     if (dialogContext.mounted) {
                       Navigator.pop(dialogContext, item);
                     }
@@ -317,6 +322,104 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
                   }
                 },
                 child: const Text('Add Item'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      nameController.dispose();
+      descriptionController.dispose();
+      priceController.dispose();
+    }
+  }
+
+  Future<MenuItem?> _showEditItemDialog(MenuItem item) async {
+    final nameController = TextEditingController(text: item.name);
+    final descriptionController = TextEditingController(text: item.description);
+    final priceController = TextEditingController(text: '${item.price}');
+    var isVeg = item.isVeg;
+    XFile? pickedImage;
+    try {
+      return await showDialog<MenuItem>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('Edit Item'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Name'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: descriptionController,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: priceController,
+                    decoration: const InputDecoration(labelText: 'Price'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final file = await ImagePicker().pickImage(source: ImageSource.gallery);
+                      if (file != null) setDialogState(() => pickedImage = file);
+                    },
+                    icon: const Icon(Icons.image_outlined),
+                    label: Text(pickedImage == null ? 'Change Image' : 'Image Selected'),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Vegetarian'),
+                    value: isVeg,
+                    onChanged: (value) => setDialogState(() => isVeg = value),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final name = nameController.text.trim();
+                  final price = num.tryParse(priceController.text.trim());
+                  if (name.isEmpty || price == null || price < 0) return;
+                  try {
+                    final form = FormData.fromMap({
+                      'name': name,
+                      'description': descriptionController.text.trim(),
+                      'price': price,
+                      'categoryId': item.categoryId,
+                      'isVeg': isVeg.toString(),
+                      if (pickedImage != null)
+                        'image': await MultipartFile.fromFile(pickedImage!.path),
+                    });
+                    final updated = await widget.menuService.updateMenuItem(item.id, form);
+                    if (dialogContext.mounted) {
+                      Navigator.pop(dialogContext, updated);
+                    }
+                    if (mounted) {
+                      setState(() {
+                        final idx = _items.indexWhere((entry) => entry.id == item.id);
+                        if (idx >= 0) _items[idx] = updated;
+                      });
+                    }
+                  } catch (_) {
+                    if (mounted) {
+                      setState(() => _error = 'Unable to update menu item.');
+                    }
+                  }
+                },
+                child: const Text('Save'),
               ),
             ],
           ),
@@ -366,17 +469,8 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
     }
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
-    if (file != null) setState(() => _pickedImage = file);
-  }
-
   @override
   void dispose() {
-    _nameController.dispose();
-    _descController.dispose();
-    _priceController.dispose();
     super.dispose();
   }
 
@@ -387,132 +481,11 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Category Master',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-          const SizedBox(height: 4),
-          const Text('Select a category to manage its menu items.'),
+          const Text(
+            'Category Master',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+          ),
           const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () => _showCategoryDialog(),
-            icon: const Icon(Icons.add_circle_outline),
-            label: const Text('Add New Category'),
-          ),
-          if (_categories.isEmpty)
-            const Text('Create a category before adding menu items.')
-          else
-            SizedBox(
-              height: 96,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _categories.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final category = _categories[index];
-                  final selected = _categoryId == category.id;
-                  return SizedBox(
-                    width: 96,
-                    child: Card(
-                      margin: EdgeInsets.zero,
-                      elevation: 0,
-                      color: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: selected ? AppTheme.primary : AppTheme.border,
-                          width: selected ? 2 : 1,
-                        ),
-                      ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () => _openCategoryItems(category),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(_categoryIcon(category.icon),
-                                color: AppTheme.primary, size: 20),
-                              const SizedBox(height: 8),
-                            Text(
-                              category.name,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          const Divider(height: 24),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Add Menu Item',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-                  const SizedBox(height: 4),
-                  Text(
-                    _categoryId == null
-                        ? 'Select a category above to add an item to it.'
-                        : 'Adding to: ${_categories.firstWhere((category) => category.id == _categoryId).name}',
-                    style: const TextStyle(color: AppTheme.textSecondary),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _nameController,
-                    enabled: _categoryId != null && !_formLoading,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _descController,
-                    enabled: _categoryId != null && !_formLoading,
-                    decoration: const InputDecoration(labelText: 'Description'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _priceController,
-                    enabled: _categoryId != null && !_formLoading,
-                    decoration: const InputDecoration(labelText: 'Price'),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 4),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Vegetarian'),
-                    value: _isVeg,
-                    onChanged: _categoryId == null || _formLoading
-                        ? null
-                        : (v) => setState(() => _isVeg = v),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: _categoryId == null || _formLoading ? null : _pickImage,
-                    icon: const Icon(Icons.image),
-                    label: Text(_pickedImage == null ? 'Pick image' : 'Image selected'),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _categoryId == null || _formLoading ? null : _createItem,
-                      child: Text(_formLoading ? 'Saving…' : 'Add Item'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const Divider(height: 32),
-          const Text('Menu Items',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
           if (_loading)
             const Padding(
               padding: EdgeInsets.all(24),
@@ -520,69 +493,104 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
             )
           else if (_error != null)
             Text(_error!, style: const TextStyle(color: AppTheme.error))
+          else if (_categories.isEmpty)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Text(
+                    'Create a category to begin.',
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                ),
+              ),
+            )
           else
-            ..._visibleItems.map((item) {
-              final priceController =
-                  TextEditingController(text: '${item.price}');
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.9,
+              ),
+              itemCount: _categories.length + 1,
+              itemBuilder: (context, index) {
+                if (index == _categories.length) {
+                  return Card(
+                    margin: EdgeInsets.zero,
+                    elevation: 0,
+                    color: AppTheme.surface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: AppTheme.border),
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => _showCategoryDialog(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.add_circle_outline, color: AppTheme.primary, size: 26),
+                            SizedBox(height: 10),
+                            Text(
+                              '+ New Category',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                final category = _categories[index];
+                final selected = _categoryId == category.id;
+                return Card(
+                  margin: EdgeInsets.zero,
+                  elevation: 0,
+                  color: AppTheme.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: selected ? AppTheme.primary : AppTheme.border,
+                      width: selected ? 2 : 1,
+                    ),
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _openCategoryItems(category),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          if (item.imageUrl.isNotEmpty)
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(item.imageUrl,
-                                  width: 56, height: 56, fit: BoxFit.cover),
-                            )
-                          else
-                            const Icon(Icons.restaurant, size: 56),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(item.name,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w700)),
-                                Text(item.categoryName),
-                                Text(item.isVeg ? 'Veg' : 'Non-Veg'),
-                              ],
+                          Icon(_categoryIcon(category.icon), color: AppTheme.primary, size: 28),
+                          const SizedBox(height: 10),
+                          Text(
+                            category.name,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: priceController,
-                        decoration: const InputDecoration(labelText: 'Price'),
-                        keyboardType: TextInputType.number,
-                        onSubmitted: (v) => _updatePrice(item, v),
-                      ),
-                      Row(
-                        children: [
-                          Text(item.available ? 'Available' : 'Sold out'),
-                          const Spacer(),
-                          Switch(
-                            value: item.available,
-                            onChanged: (_) => _toggleAvailability(item),
-                          ),
-                          IconButton(
-                            onPressed: () => _deleteItem(item),
-                            icon: const Icon(Icons.delete_outline,
-                                color: AppTheme.error),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              );
-            }),
+                );
+              },
+            ),
         ],
       ),
     );
@@ -594,6 +602,8 @@ class _CategoryItemsPage extends StatefulWidget {
     required this.category,
     required this.items,
     required this.onAddItem,
+    required this.onEditItem,
+    required this.onDeleteItem,
     required this.onUpdatePrice,
     required this.onToggleAvailability,
     required this.onEditCategory,
@@ -603,6 +613,8 @@ class _CategoryItemsPage extends StatefulWidget {
   final Category category;
   final List<MenuItem> items;
   final Future<MenuItem?> Function() onAddItem;
+  final Future<MenuItem?> Function(MenuItem item) onEditItem;
+  final Future<void> Function(MenuItem item) onDeleteItem;
   final Future<void> Function(MenuItem item, String price) onUpdatePrice;
   final Future<MenuItem?> Function(MenuItem item) onToggleAvailability;
   final VoidCallback onEditCategory;
@@ -624,29 +636,37 @@ class _CategoryItemsPageState extends State<_CategoryItemsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.category.name)),
+      appBar: AppBar(
+        title: Text(widget.category.name),
+        actions: [
+          IconButton(
+            tooltip: 'Edit category',
+            onPressed: widget.onEditCategory,
+            icon: const Icon(Icons.edit_outlined),
+          ),
+          IconButton(
+            tooltip: 'Delete category',
+            onPressed: widget.onDeleteCategory,
+            icon: const Icon(Icons.delete_outline, color: AppTheme.error),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '${_items.length} item${_items.length == 1 ? '' : 's'}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final item = await widget.onAddItem();
+                    if (item != null && mounted) {
+                      setState(() => _items = [..._items, item]);
+                    }
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('+ Add Item'),
                 ),
-              ),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  final item = await widget.onAddItem();
-                  if (item != null && mounted) {
-                    setState(() => _items = [..._items, item]);
-                  }
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Add Item'),
               ),
             ],
           ),
@@ -667,11 +687,58 @@ class _CategoryItemsPageState extends State<_CategoryItemsPage> {
                     children: [
                       Row(
                         children: [
+                          if (item.imageUrl.isNotEmpty)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                item.imageUrl,
+                                width: 56,
+                                height: 56,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          else
+                            const Icon(Icons.restaurant, size: 56),
+                          const SizedBox(width: 12),
                           Expanded(
-                            child: Text(item.name,
-                                style: const TextStyle(fontWeight: FontWeight.w700)),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.name,
+                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(item.isVeg ? 'Veg' : 'Non-Veg'),
+                              ],
+                            ),
                           ),
-                          Text(item.isVeg ? 'Veg' : 'Non-Veg'),
+                          IconButton(
+                            tooltip: 'Edit item',
+                            onPressed: () async {
+                              final updated = await widget.onEditItem(item);
+                              if (updated != null && mounted) {
+                                setState(() {
+                                  _items = _items
+                                      .map((entry) => entry.id == updated.id ? updated : entry)
+                                      .toList();
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.edit_outlined),
+                          ),
+                          IconButton(
+                            tooltip: 'Delete item',
+                            onPressed: () async {
+                              await widget.onDeleteItem(item);
+                              if (mounted) {
+                                setState(() {
+                                  _items = _items.where((entry) => entry.id != item.id).toList();
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.delete_outline, color: AppTheme.error),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -688,14 +755,11 @@ class _CategoryItemsPageState extends State<_CategoryItemsPage> {
                           Switch(
                             value: item.available,
                             onChanged: (_) async {
-                              final updated =
-                                  await widget.onToggleAvailability(item);
+                              final updated = await widget.onToggleAvailability(item);
                               if (updated != null && mounted) {
                                 setState(() {
                                   _items = _items
-                                      .map((entry) => entry.id == updated.id
-                                          ? updated
-                                          : entry)
+                                      .map((entry) => entry.id == updated.id ? updated : entry)
                                       .toList();
                                 });
                               }
@@ -708,18 +772,6 @@ class _CategoryItemsPageState extends State<_CategoryItemsPage> {
                 ),
               ),
             ),
-          const SizedBox(height: 20),
-          OutlinedButton.icon(
-            onPressed: widget.onEditCategory,
-            icon: const Icon(Icons.edit_outlined),
-            label: const Text('Edit Category'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: widget.onDeleteCategory,
-            icon: const Icon(Icons.delete_outline, color: AppTheme.error),
-            label: const Text('Delete Category'),
-          ),
         ],
       ),
     );
