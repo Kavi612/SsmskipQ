@@ -381,10 +381,10 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
                   final rankedItem = entry.value;
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor: AppTheme.primaryMuted,
-                      foregroundColor: AppTheme.primary,
-                      child: Text('${entry.key + 1}'),
+                    leading: MenuItemImage(
+                      item: rankedItem.item,
+                      width: 46,
+                      height: 46,
                     ),
                     title: Text(rankedItem.item.name, style: const TextStyle(fontWeight: FontWeight.w700)),
                     subtitle: const Text('Quantity Ordered'),

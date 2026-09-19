@@ -6,6 +6,7 @@ import '../../services/orders_service.dart';
 import '../../services/feedback_service.dart';
 import '../../services/menu_service.dart';
 import 'super_admin_shell.dart';
+import 'super_admin_session.dart';
 
 class SuperAdminLoginScreen extends StatefulWidget {
   const SuperAdminLoginScreen({
@@ -44,6 +45,8 @@ class _SuperAdminLoginScreenState extends State<SuperAdminLoginScreen> {
       setState(() => _error = 'Invalid Super Admin ID or password.');
       return;
     }
+
+    SuperAdminSession.start();
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
