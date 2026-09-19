@@ -74,6 +74,13 @@ class ManagerProfileScreen extends StatelessWidget {
               const SizedBox(height: 14),
               Center(
                 child: TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.primary,
+                    textStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
                         builder: (_) => SuperAdminLoginScreen(

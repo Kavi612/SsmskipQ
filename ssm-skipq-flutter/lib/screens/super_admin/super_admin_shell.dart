@@ -211,7 +211,9 @@ class _SuperAdminProfileScreen extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     SuperAdminSession.clear();
-                    Navigator.of(context).pop();
+                    final navigator = Navigator.of(context);
+                    navigator.pop();
+                    navigator.pop();
                   },
                   child: const Text('Logout'),
                 ),
