@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../config/theme.dart';
 import '../../models/feedback.dart';
 import '../../services/feedback_service.dart';
+import '../../services/super_admin_service.dart';
 import '../../utils/helpers.dart';
 import 'super_admin_date_filter.dart';
 
@@ -14,10 +15,12 @@ class FeedbackAnalyticsScreen extends StatefulWidget {
   const FeedbackAnalyticsScreen({
     super.key,
     required this.feedbackService,
+    required this.superAdminService,
     this.initialSelection,
   });
 
   final FeedbackService feedbackService;
+  final SuperAdminService superAdminService;
   final SuperAdminDateFilterSelection? initialSelection;
 
   @override
@@ -50,7 +53,7 @@ class _FeedbackAnalyticsScreenState extends State<FeedbackAnalyticsScreen> {
       _error = null;
     });
     try {
-      _feedback = await widget.feedbackService.fetchManagerFeedback();
+      _feedback = await widget.superAdminService.fetchFeedback();
     } catch (_) {
       _error = 'Unable to load feedback analytics data.';
     } finally {

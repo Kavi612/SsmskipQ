@@ -9,6 +9,7 @@ import '../../models/order.dart';
 import '../../services/menu_service.dart';
 import '../../services/orders_service.dart';
 import '../../services/feedback_service.dart';
+import '../../services/super_admin_service.dart';
 import '../../widgets/menu_item_image.dart';
 import 'super_admin_feedback_analytics_screen.dart';
 import 'super_admin_date_filter.dart';
@@ -21,6 +22,7 @@ class SuperAdminAnalyticsDetailScreen extends StatelessWidget {
     required this.ordersService,
     required this.menuService,
     required this.feedbackService,
+    required this.superAdminService,
     });
 
   final String title;
@@ -28,6 +30,7 @@ class SuperAdminAnalyticsDetailScreen extends StatelessWidget {
   final OrdersService ordersService;
   final MenuService menuService;
   final FeedbackService feedbackService;
+  final SuperAdminService superAdminService;
 
     @override
     Widget build(BuildContext context) {
@@ -35,12 +38,14 @@ class SuperAdminAnalyticsDetailScreen extends StatelessWidget {
         return OrderAnalyticsScreen(
           ordersService: ordersService,
           menuService: menuService,
+          superAdminService: superAdminService,
           initialSelection: filter,
         );
       }
       if (title == 'Feedback Analytics') {
         return FeedbackAnalyticsScreen(
           feedbackService: feedbackService,
+          superAdminService: superAdminService,
           initialSelection: filter,
         );
       }
@@ -56,11 +61,13 @@ class OrderAnalyticsScreen extends StatefulWidget {
       super.key,
       required this.ordersService,
       required this.menuService,
+      required this.superAdminService,
       this.initialSelection,
     });
 
   final OrdersService ordersService;
   final MenuService menuService;
+  final SuperAdminService superAdminService;
   final SuperAdminDateFilterSelection? initialSelection;
 
     @override
@@ -97,8 +104,8 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
       });
       try {
         final results = await Future.wait([
-          widget.ordersService.fetchManagerOrders(),
-          widget.menuService.fetchMenuItems(),
+          widget.superAdminService.fetchOrders(),
+          widget.superAdminService.fetchMenuItems(),
         ]);
         _orders = results[0] as List<Order>;
         _menuItems = results[1] as List<MenuItem>;

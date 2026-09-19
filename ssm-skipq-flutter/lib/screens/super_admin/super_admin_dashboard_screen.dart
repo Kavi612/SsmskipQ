@@ -60,8 +60,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
     });
     try {
       final results = await Future.wait([
-        widget.ordersService.fetchManagerOrders(),
-        widget.feedbackService.fetchManagerFeedback(),
+        widget.superAdminService.fetchOrders(),
+        widget.superAdminService.fetchFeedback(),
         widget.superAdminService.fetchManagers(),
       ]);
       _orders = results[0] as List<Order>;
@@ -299,6 +299,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                 ordersService: widget.ordersService,
                 menuService: widget.menuService,
                 feedbackService: widget.feedbackService,
+                superAdminService: widget.superAdminService,
               ),
             ),
           ),

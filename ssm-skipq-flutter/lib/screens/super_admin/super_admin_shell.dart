@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../services/super_admin_service.dart';
 import '../../services/orders_service.dart';
 import '../../services/feedback_service.dart';
 import '../../services/menu_service.dart';
+import 'super_admin_analytics_detail_screen.dart';
+import 'super_admin_date_filter.dart';
 import 'super_admin_dashboard_screen.dart';
 
 class SuperAdminShell extends StatefulWidget {
@@ -29,6 +32,8 @@ class _SuperAdminShellState extends State<SuperAdminShell> {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
     final pages = [
       SuperAdminDashboardScreen(
         ordersService: widget.ordersService,
@@ -36,10 +41,51 @@ class _SuperAdminShellState extends State<SuperAdminShell> {
         superAdminService: widget.superAdminService,
         menuService: widget.menuService,
       ),
-      const _SuperAdminPlaceholder(title: 'Orders'),
-      const _SuperAdminPlaceholder(title: 'Feedback'),
-      const _SuperAdminPlaceholder(title: 'Revenue'),
-      const _SuperAdminProfileScreen(),
+      SuperAdminAnalyticsDetailScreen(
+        title: 'Order Analytics',
+        filter: SuperAdminDateFilterSelection(
+          period: SuperAdminAnalyticsPeriod.day,
+          label: DateFormat('d MMM yyyy').format(todayStart),
+          range: DateTimeRange(
+            start: todayStart,
+            end: todayStart.add(const Duration(days: 1)),
+          ),
+        ),
+        ordersService: widget.ordersService,
+        menuService: widget.menuService,
+        feedbackService: widget.feedbackService,
+        superAdminService: widget.superAdminService,
+      ),
+      SuperAdminAnalyticsDetailScreen(
+        title: 'Feedback Analytics',
+        filter: SuperAdminDateFilterSelection(
+          period: SuperAdminAnalyticsPeriod.year,
+          label: '${now.year}',
+          range: DateTimeRange(
+            start: DateTime(now.year),
+            end: DateTime(now.year + 1),
+          ),
+        ),
+        ordersService: widget.ordersService,
+        menuService: widget.menuService,
+        feedbackService: widget.feedbackService,
+        superAdminService: widget.superAdminService,
+      ),
+      SuperAdminAnalyticsDetailScreen(
+        title: 'Revenue Analytics',
+        filter: SuperAdminDateFilterSelection(
+          period: SuperAdminAnalyticsPeriod.year,
+          label: '${now.year}',
+          range: DateTimeRange(
+            start: DateTime(now.year),
+            end: DateTime(now.year + 1),
+          ),
+        ),
+        ordersService: widget.ordersService,
+        menuService: widget.menuService,
+        feedbackService: widget.feedbackService,
+        superAdminService: widget.superAdminService,
+      ),
     ];
 
     return Scaffold(
@@ -49,7 +95,9 @@ class _SuperAdminShellState extends State<SuperAdminShell> {
           IconButton(
             tooltip: 'Profile',
             icon: const Icon(Icons.person_outline),
-            onPressed: () => setState(() => _index = 4),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const _SuperAdminProfileScreen()),
+            ),
           ),
         ],
       ),
@@ -74,25 +122,10 @@ class _SuperAdminShellState extends State<SuperAdminShell> {
               icon: Icon(Icons.payments_outlined),
               selectedIcon: Icon(Icons.payments),
               label: 'Revenue'),
-          NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Profile'),
         ],
       ),
     );
   }
-}
-
-class _SuperAdminPlaceholder extends StatelessWidget {
-  const _SuperAdminPlaceholder({required this.title});
-  final String title;
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Text('$title analytics will be available soon.',
-            style: const TextStyle(color: Colors.grey)),
-      );
 }
 
 class _SuperAdminProfileScreen extends StatelessWidget {

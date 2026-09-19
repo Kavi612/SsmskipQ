@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
 
 import '../models/super_admin.dart';
+import '../models/feedback.dart';
+import '../models/menu.dart';
+import '../models/order.dart';
 import 'api_client.dart';
 
 class SuperAdminService {
@@ -12,6 +15,33 @@ class SuperAdminService {
         'X-Super-Admin-Id': 'superadmin',
         'X-Super-Admin-Password': '1234admin',
       });
+
+        Future<List<Order>> fetchOrders() async {
+        final response = await _api.dio
+          .get<Map<String, dynamic>>('/super-admin/orders', options: _options);
+        final data = response.data?['data'] as Map<String, dynamic>?;
+        return (data?['orders'] as List<dynamic>? ?? [])
+          .map((item) => Order.fromJson(item as Map<String, dynamic>))
+          .toList();
+        }
+
+        Future<List<OrderFeedback>> fetchFeedback() async {
+        final response = await _api.dio
+          .get<Map<String, dynamic>>('/super-admin/feedback', options: _options);
+        final data = response.data?['data'] as Map<String, dynamic>?;
+        return (data?['feedback'] as List<dynamic>? ?? [])
+          .map((item) => OrderFeedback.fromJson(item as Map<String, dynamic>))
+          .toList();
+        }
+
+        Future<List<MenuItem>> fetchMenuItems() async {
+        final response = await _api.dio
+          .get<Map<String, dynamic>>('/super-admin/menu-items', options: _options);
+        final data = response.data?['data'] as Map<String, dynamic>?;
+        return (data?['items'] as List<dynamic>? ?? [])
+          .map((item) => MenuItem.fromJson(item as Map<String, dynamic>))
+          .toList();
+        }
 
   Future<List<ManagedManager>> fetchManagers() async {
     final response = await _api.dio
