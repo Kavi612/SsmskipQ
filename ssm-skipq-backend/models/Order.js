@@ -71,6 +71,9 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: ['STUDENT'],
     },
+    cancelledAt: {
+      type: Date,
+    },
     tokenNumber: {
       type: String,
       required: [true, 'Token number is required'],

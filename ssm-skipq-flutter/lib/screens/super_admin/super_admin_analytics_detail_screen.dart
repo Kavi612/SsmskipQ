@@ -13,6 +13,7 @@ import '../../services/super_admin_service.dart';
 import '../../widgets/menu_item_image.dart';
 import 'super_admin_feedback_analytics_screen.dart';
 import 'super_admin_revenue_analytics_screen.dart';
+import 'super_admin_cancellation_analytics_screen.dart';
 import 'super_admin_date_filter.dart';
 
 class SuperAdminAnalyticsDetailScreen extends StatelessWidget {
@@ -52,6 +53,12 @@ class SuperAdminAnalyticsDetailScreen extends StatelessWidget {
       }
       if (title == 'Revenue Analytics') {
         return RevenueAnalyticsScreen(
+          superAdminService: superAdminService,
+          initialSelection: filter,
+        );
+      }
+      if (title == 'Cancellation Analytics') {
+        return CancellationAnalyticsScreen(
           superAdminService: superAdminService,
           initialSelection: filter,
         );

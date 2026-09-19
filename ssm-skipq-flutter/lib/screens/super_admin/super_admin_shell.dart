@@ -72,6 +72,21 @@ class _SuperAdminShellState extends State<SuperAdminShell> {
         superAdminService: widget.superAdminService,
       ),
       SuperAdminAnalyticsDetailScreen(
+        title: 'Cancellation Analytics',
+        filter: SuperAdminDateFilterSelection(
+          period: SuperAdminAnalyticsPeriod.year,
+          label: '${now.year}',
+          range: DateTimeRange(
+            start: DateTime(now.year),
+            end: DateTime(now.year + 1),
+          ),
+        ),
+        ordersService: widget.ordersService,
+        menuService: widget.menuService,
+        feedbackService: widget.feedbackService,
+        superAdminService: widget.superAdminService,
+      ),
+      SuperAdminAnalyticsDetailScreen(
         title: 'Revenue Analytics',
         filter: SuperAdminDateFilterSelection(
           period: SuperAdminAnalyticsPeriod.year,
@@ -118,6 +133,10 @@ class _SuperAdminShellState extends State<SuperAdminShell> {
               icon: Icon(Icons.star_outline),
               selectedIcon: Icon(Icons.star),
               label: 'Feedback'),
+            NavigationDestination(
+              icon: Icon(Icons.cancel_outlined),
+              selectedIcon: Icon(Icons.cancel),
+              label: 'Cancellation'),
           NavigationDestination(
               icon: Icon(Icons.payments_outlined),
               selectedIcon: Icon(Icons.payments),

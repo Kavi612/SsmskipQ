@@ -215,6 +215,7 @@ class Order {
     required this.createdAt,
     this.student,
     this.cancelledBy,
+    this.cancelledAt,
     this.hasFeedback = false,
     this.feedback,
   });
@@ -230,6 +231,7 @@ class Order {
   final DateTime createdAt;
   final OrderStudent? student;
   final String? cancelledBy;
+  final DateTime? cancelledAt;
   final bool hasFeedback;
   final SubmittedFeedback? feedback;
 
@@ -251,6 +253,7 @@ class Order {
           ? OrderStudent.fromJson(json['student'] as Map<String, dynamic>)
           : null,
           cancelledBy: json['cancelledBy'] as String?,
+          cancelledAt: DateTime.tryParse(json['cancelledAt'] as String? ?? ''),
       hasFeedback: json['hasFeedback'] as bool? ?? false,
         feedback: json['feedback'] != null
           ? SubmittedFeedback.fromJson(json['feedback'] as Map<String, dynamic>)

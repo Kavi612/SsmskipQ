@@ -77,6 +77,7 @@ export const formatOrder = (order) => ({
   paymentStatus: order.paymentStatus,
   status: order.status,
   cancelledBy: order.cancelledBy,
+  cancelledAt: order.cancelledAt,
   tokenNumber: order.tokenNumber,
   createdAt: order.createdAt,
 });
@@ -523,7 +524,7 @@ export const cancelOrder = async (req, res) => {
         studentId: req.user.id,
         status: 'PENDING',
       },
-      { $set: { status: 'CANCELLED', cancelledBy: 'STUDENT' } },
+      { $set: { status: 'CANCELLED', cancelledBy: 'STUDENT', cancelledAt: new Date() } },
       { new: true },
     ).populate('studentId', 'name mobile');
 
