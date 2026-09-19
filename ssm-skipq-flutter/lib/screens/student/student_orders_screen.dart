@@ -189,6 +189,9 @@ class _StudentOrdersScreenState extends State<StudentOrdersScreen> {
                                                   ),
                                                 );
                                           });
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Feedback submitted')),
+                                            );
                                         },
                                       ),
                                     ] else if (order.status == OrderStatus.pickedUp &&

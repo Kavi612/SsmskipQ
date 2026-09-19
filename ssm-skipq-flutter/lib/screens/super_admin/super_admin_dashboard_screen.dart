@@ -46,6 +46,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
   DateTimeRange? _customRange;
   bool _loading = true;
   String? _error;
+  final Set<String> _visibleManagerPasswords = {};
 
   @override
   void initState() {
@@ -348,19 +349,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
         const Text('Manager Management',
             style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
         const SizedBox(height: 10),
-        ..._managers.map(
-          (manager) => Card(
-            child: ListTile(
-              leading: const CircleAvatar(
-                  backgroundColor: AppTheme.primaryMuted,
-                  child: Icon(Icons.person_outline, color: AppTheme.primary)),
-              title: Text(manager.name,
-                  style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle:
-                  Text('${manager.managerId}  •  ${manager.passwordMasked}'),
-            ),
-          ),
-        ),
+        ..._managers.map(_managerCard),
         const SizedBox(height: 8),
         OutlinedButton.icon(
             onPressed: _showAddManager,
@@ -368,6 +357,78 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
             label: const Text('Add Manager')),
       ],
     );
+  }
+
+  Widget _managerCard(ManagedManager manager) {
+    final visible = _visibleManagerPasswords.contains(manager.id);
+    return Card(
+      child: ListTile(
+        leading: const CircleAvatar(
+            backgroundColor: AppTheme.primaryMuted,
+            child: Icon(Icons.person_outline, color: AppTheme.primary)),
+        title: Text(manager.name,
+            style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text('${manager.managerId}  •  ${visible ? 'Password unavailable' : manager.passwordMasked}'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: visible ? 'Hide password' : 'Show password',
+              icon: Icon(visible ? Icons.visibility_off : Icons.visibility),
+              onPressed: () => setState(() {
+                if (visible) {
+                  _visibleManagerPasswords.remove(manager.id);
+                } else {
+                  _visibleManagerPasswords.add(manager.id);
+                }
+              }),
+            ),
+            IconButton(
+              tooltip: 'Delete manager',
+              icon: const Icon(Icons.delete_outline, color: AppTheme.error),
+              onPressed: () => _confirmDeleteManager(manager),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteManager(ManagedManager manager) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove this manager?'),
+        content: const Text(
+            'They will no longer be able to log in.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await widget.superAdminService.deleteManager(manager.id);
+      if (!mounted) return;
+      setState(() {
+        _managers = _managers.where((item) => item.id != manager.id).toList();
+        _visibleManagerPasswords.remove(manager.id);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Manager deleted')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to remove manager.')));
+    }
   }
 
   Future<void> _showAddManager() async {

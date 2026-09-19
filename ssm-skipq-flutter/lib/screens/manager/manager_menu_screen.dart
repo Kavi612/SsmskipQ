@@ -198,6 +198,11 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
           _categoryId = _categories.isNotEmpty ? _categories.first.id : null;
         }
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Category deleted')),
+        );
+      }
     } catch (_) {
       setState(
           () => _error = 'Move or delete this category\'s menu items first.');
@@ -310,6 +315,11 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
         final idx = _items.indexWhere((e) => e.id == item.id);
         if (idx >= 0) _items[idx] = updated;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Availability updated')),
+        );
+      }
       return updated;
     } catch (_) {
       setState(() => _error = 'Unable to toggle availability.');
@@ -335,6 +345,11 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
         final idx = _items.indexWhere((e) => e.id == item.id);
         if (idx >= 0) _items[idx] = updated;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Item price updated')),
+        );
+      }
     } catch (_) {
       setState(() => _error = 'Unable to update price.');
     }

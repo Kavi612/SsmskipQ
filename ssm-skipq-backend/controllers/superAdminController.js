@@ -50,3 +50,12 @@ export const createManager = async (req, res) => {
     data: { manager: { id: manager._id, managerId: manager.managerId, name: manager.name, passwordMasked: '********' } },
   });
 };
+
+export const deleteManager = async (req, res) => {
+  if (!guard(req, res)) return;
+  const manager = await Manager.findByIdAndDelete(req.params.id);
+  if (!manager) {
+    return res.status(404).json({ success: false, message: 'Manager not found' });
+  }
+  return res.json({ success: true, message: 'Manager deleted' });
+};

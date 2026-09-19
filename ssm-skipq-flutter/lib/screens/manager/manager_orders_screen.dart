@@ -68,6 +68,11 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
     try {
       final updated = await widget.ordersService.advanceStatus(orderId);
       _upsertOrder(updated);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Order status updated')),
+        );
+      }
     } catch (e) {
       setState(() => _error = 'Unable to update order status: ${e.toString()}');
     } finally {
@@ -82,6 +87,11 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
       final updated =
           await widget.ordersService.updatePayment(order.id, PaymentStatus.paid);
       _upsertOrder(updated);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Payment marked as received')),
+        );
+      }
     } catch (_) {
       setState(() => _error = 'Unable to update payment status.');
     } finally {

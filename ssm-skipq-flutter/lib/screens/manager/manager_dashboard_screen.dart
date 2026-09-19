@@ -78,6 +78,11 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
         _apiTime(_closeController.text),
           );
       setState(() => _settingsMsg = 'Ordering window updated.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ordering window updated')),
+        );
+      }
     } catch (_) {
       setState(() => _settingsMsg = 'Unable to save settings.');
     } finally {

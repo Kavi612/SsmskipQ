@@ -83,4 +83,8 @@ class SuperAdminService {
     final data = response.data?['data'] as Map<String, dynamic>?;
     return ManagedManager.fromJson(data?['manager'] as Map<String, dynamic>);
   }
+
+  Future<void> deleteManager(String id) async {
+    await _api.dio.delete<void>('/super-admin/managers/$id', options: _options);
+  }
 }

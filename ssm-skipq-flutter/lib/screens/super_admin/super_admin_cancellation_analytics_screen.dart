@@ -181,7 +181,7 @@ class _CancellationAnalyticsScreenState
           ...cancelled.map((order) => ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.receipt_long_outlined, color: AppTheme.primary),
-            title: Text(order.id, style: const TextStyle(fontWeight: FontWeight.w700)),
+            title: Text(order.tokenNumber, style: const TextStyle(fontWeight: FontWeight.w700)),
             subtitle: Text(order.items.map((item) => '${item.name} x${item.quantity}').join(', ')),
             trailing: Text(formatIstDateTime(order.cancelledAt ?? order.createdAt), textAlign: TextAlign.right),
           )),
