@@ -12,6 +12,7 @@ import '../../services/feedback_service.dart';
 import '../../services/super_admin_service.dart';
 import '../../widgets/menu_item_image.dart';
 import 'super_admin_feedback_analytics_screen.dart';
+import 'super_admin_revenue_analytics_screen.dart';
 import 'super_admin_date_filter.dart';
 
 class SuperAdminAnalyticsDetailScreen extends StatelessWidget {
@@ -49,6 +50,12 @@ class SuperAdminAnalyticsDetailScreen extends StatelessWidget {
           initialSelection: filter,
         );
       }
+      if (title == 'Revenue Analytics') {
+        return RevenueAnalyticsScreen(
+          superAdminService: superAdminService,
+          initialSelection: filter,
+        );
+      }
       return Scaffold(
         appBar: AppBar(title: Text(title)),
         body: Center(child: Text('$title will be available soon.\n${filter.label}')),
@@ -77,6 +84,7 @@ class OrderAnalyticsScreen extends StatefulWidget {
 class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
     List<Order> _orders = [];
     List<MenuItem> _menuItems = [];
+    List<Category> _categories = [];
     late SuperAdminDateFilterSelection _selection;
     bool _loading = true;
     String? _error;
@@ -106,9 +114,11 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
         final results = await Future.wait([
           widget.superAdminService.fetchOrders(),
           widget.superAdminService.fetchMenuItems(),
+          widget.superAdminService.fetchCategories(),
         ]);
         _orders = results[0] as List<Order>;
         _menuItems = results[1] as List<MenuItem>;
+        _categories = results[2] as List<Category>;
       } catch (_) {
         _error = 'Unable to load order analytics data.';
       } finally {
@@ -153,7 +163,7 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
                 const SizedBox(height: 16),
                 _metricRow(completionRate, orders.length),
                 const SizedBox(height: 16),
-                _volumeSection(orders),
+                _categorySection(orders),
                 const SizedBox(height: 16),
                 _highlight(ranked),
                 const SizedBox(height: 16),
@@ -239,8 +249,8 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
       );
     }
 
-    Widget _volumeSection(List<Order> orders) {
-      final buckets = _volumeBuckets(orders);
+    Widget _categorySection(List<Order> orders) {
+      final buckets = _categoryBuckets(orders);
       final chartMax = _chartScaleMax(buckets.map((bucket) => bucket.value));
       return Card(
         child: Padding(
@@ -248,7 +258,7 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Order Volume', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              const Text('Orders by Category', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
               const SizedBox(height: 4),
               Text(_selection.label, style: const TextStyle(color: AppTheme.textSecondary)),
               const SizedBox(height: 14),
@@ -265,7 +275,7 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
                         child: Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: SizedBox(
-                            width: buckets.length > 31 ? 28 : 42,
+                            width: buckets.length > 8 ? 52 : 68,
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
@@ -295,46 +305,28 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
       );
     }
 
-    List<_VolumeBucket> _volumeBuckets(List<Order> orders) {
-      final start = _selection.range.start;
-      final end = _selection.range.end;
-      final buckets = <_VolumeBucket>[];
-      void addBucket(String label, DateTime bucketStart, DateTime bucketEnd) {
-        final value = orders.where((order) =>
-            !order.createdAt.isBefore(bucketStart) && order.createdAt.isBefore(bucketEnd)).length;
-        buckets.add(_VolumeBucket(label, value));
+    List<_CategoryBucket> _categoryBuckets(List<Order> orders) {
+      final counts = <String, int>{
+        for (final category in _categories) category.id: 0,
+      };
+      final menuItemsById = {
+        for (final menuItem in _menuItems) menuItem.id: menuItem,
+      };
+      for (final order in orders) {
+        for (final category in _categories) {
+          final hasCategory = order.items.any((item) {
+            final menuItem = menuItemsById[item.menuItemId];
+            return menuItem?.categoryId == category.id ||
+                menuItem?.categoryName == category.name;
+          });
+          if (hasCategory) counts[category.id] = (counts[category.id] ?? 0) + 1;
+        }
       }
-
-      switch (_selection.period) {
-        case SuperAdminAnalyticsPeriod.day:
-          for (var hour = 0; hour < 24; hour++) {
-            final bucketStart = start.add(Duration(hours: hour));
-            addBucket(DateFormat('ha').format(bucketStart), bucketStart, bucketStart.add(const Duration(hours: 1)));
-          }
-        case SuperAdminAnalyticsPeriod.month:
-          for (var day = start; day.isBefore(end); day = day.add(const Duration(days: 1))) {
-            addBucket('${day.day}', day, day.add(const Duration(days: 1)));
-          }
-        case SuperAdminAnalyticsPeriod.year:
-          for (var month = 1; month <= 12; month++) {
-            final bucketStart = DateTime(start.year, month);
-            addBucket(DateFormat('MMM').format(bucketStart), bucketStart, DateTime(start.year, month + 1));
-          }
-        case SuperAdminAnalyticsPeriod.custom:
-          final span = end.difference(start).inDays;
-          if (span <= 92) {
-            for (var day = start; day.isBefore(end); day = day.add(const Duration(days: 1))) {
-              addBucket('${day.day}', day, day.add(const Duration(days: 1)));
-            }
-          } else {
-            var month = DateTime(start.year, start.month);
-            while (month.isBefore(end)) {
-              addBucket(DateFormat('MMM').format(month), month, DateTime(month.year, month.month + 1));
-              month = DateTime(month.year, month.month + 1);
-            }
-          }
-      }
-      return buckets;
+      final categoryBuckets = _categories
+          .map((category) => _CategoryBucket(category.name, counts[category.id] ?? 0))
+          .toList();
+      categoryBuckets.sort((a, b) => b.value.compareTo(a.value));
+      return categoryBuckets;
     }
 
     Widget _highlight(List<_RankedItem> ranked) {
@@ -430,8 +422,8 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
     }
   }
 
-  class _VolumeBucket {
-    const _VolumeBucket(this.label, this.value);
+  class _CategoryBucket {
+    const _CategoryBucket(this.label, this.value);
 
     final String label;
     final int value;
