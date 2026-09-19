@@ -104,6 +104,10 @@ class _StudentOrdersScreenState extends State<StudentOrdersScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('$skipped item(s) skipped — no longer available.')),
         );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Items added to cart')),
+        );
       }
       if (mounted) context.go('/student/cart');
     } catch (_) {

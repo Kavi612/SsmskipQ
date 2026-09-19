@@ -122,6 +122,9 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
       if (mounted) {
         setState(() => _orderPlaced = true);
         cart.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Order placed successfully')),
+        );
         context.go(
           '/student/track-order/${finalOrder.id}',
           extra: finalOrder,

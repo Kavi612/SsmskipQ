@@ -189,7 +189,7 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
     }
   }
 
-  Future<void> _deleteCategory(Category category) async {
+  Future<bool> _deleteCategory(Category category) async {
     try {
       await widget.menuService.deleteCategory(category.id);
       setState(() {
@@ -203,9 +203,9 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
           const SnackBar(content: Text('Category deleted')),
         );
       }
+      return true;
     } catch (_) {
-      setState(
-          () => _error = 'Move or delete this category\'s menu items first.');
+      return false;
     }
   }
 
@@ -222,25 +222,36 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
           onAddItem: () => _showAddItemDialog(category),
           onEditItem: _showEditItemDialog,
           onDeleteItem: (item) async {
-            final confirmed = await showDialog<bool>(
+            var deleted = false;
+            await showDialog<void>(
               context: context,
               builder: (dialogContext) => AlertDialog(
                 title: const Text('Delete this item?'),
                 content: const Text('This cannot be undone.'),
                 actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(dialogContext, false),
+                    onPressed: () => Navigator.pop(dialogContext),
                     child: const Text('Cancel'),
                   ),
                   ElevatedButton(
-                    onPressed: () => Navigator.pop(dialogContext, true),
+                    onPressed: () async {
+                      final success = await _deleteItem(item);
+                      if (!dialogContext.mounted) return;
+                      if (success) {
+                        deleted = true;
+                        Navigator.pop(dialogContext);
+                      } else {
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          const SnackBar(content: Text('Unable to delete item.')),
+                        );
+                      }
+                    },
                     child: const Text('Delete'),
                   ),
                 ],
               ),
             );
-            if (confirmed != true) return false;
-            return _deleteItem(item);
+            return deleted;
           },
           onUpdatePrice: (item, price) => _updatePrice(item, price),
           onToggleAvailability: _toggleAvailability,
@@ -260,25 +271,36 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
               return;
             }
 
-            final confirmed = await showDialog<bool>(
+            var deleted = false;
+            await showDialog<void>(
               context: context,
               builder: (dialogContext) => AlertDialog(
                 title: const Text('Delete this category?'),
                 content: const Text('This cannot be undone.'),
                 actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(dialogContext, false),
+                    onPressed: () => Navigator.pop(dialogContext),
                     child: const Text('Cancel'),
                   ),
                   ElevatedButton(
-                    onPressed: () => Navigator.pop(dialogContext, true),
+                    onPressed: () async {
+                      final success = await _deleteCategory(category);
+                      if (!dialogContext.mounted) return;
+                      if (success) {
+                        deleted = true;
+                        Navigator.pop(dialogContext);
+                      } else {
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          const SnackBar(content: Text('Unable to delete category. Move or delete its items first.')),
+                        );
+                      }
+                    },
                     child: const Text('Delete'),
                   ),
                 ],
               ),
             );
-            if (confirmed == true) {
-              await _deleteCategory(category);
+            if (deleted) {
               if (mounted) Navigator.pop(context);
             }
           },
@@ -322,7 +344,11 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
       }
       return updated;
     } catch (_) {
-      setState(() => _error = 'Unable to toggle availability.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to update availability.')),
+        );
+      }
       return null;
     }
   }
@@ -338,7 +364,12 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
 
   Future<void> _updatePrice(MenuItem item, String value) async {
     final price = num.tryParse(value);
-    if (price == null || price < 0) return;
+    if (price == null || price < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid price.')),
+      );
+      return;
+    }
     try {
       final updated = await widget.menuService.updatePrice(item.id, price);
       setState(() {
@@ -351,7 +382,11 @@ class _ManagerMenuScreenState extends State<ManagerMenuScreen> {
         );
       }
     } catch (_) {
-      setState(() => _error = 'Unable to update price.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to update item price.')),
+        );
+      }
     }
   }
 

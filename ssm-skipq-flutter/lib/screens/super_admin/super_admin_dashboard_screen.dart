@@ -395,103 +395,154 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
   }
 
   Future<void> _confirmDeleteManager(ManagedManager manager) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Remove this manager?'),
-        content: const Text(
-            'They will no longer be able to log in.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    try {
-      await widget.superAdminService.deleteManager(manager.id);
-      if (!mounted) return;
-      setState(() {
-        _managers = _managers.where((item) => item.id != manager.id).toList();
-        _visibleManagerPasswords.remove(manager.id);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Manager deleted')),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unable to remove manager.')));
-    }
-  }
-
-  Future<void> _showAddManager() async {
-    final name = TextEditingController();
-    final id = TextEditingController();
-    final password = TextEditingController();
-    String? error;
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Create Manager'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                  controller: name,
-                  decoration: const InputDecoration(labelText: 'Manager Name')),
-              TextField(
-                  controller: id,
-                  decoration: const InputDecoration(labelText: 'Manager ID')),
-              TextField(
-                  controller: password,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Password')),
-              if (error != null)
-                Text(error!, style: const TextStyle(color: AppTheme.error)),
-            ],
-          ),
+          title: const Text('Remove this manager?'),
+          content: const Text('They will no longer be able to log in.'),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel')),
-            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
               onPressed: () async {
-                if (name.text.trim().isEmpty ||
-                    id.text.trim().isEmpty ||
-                    password.text.isEmpty) {
-                  setDialogState(() => error = 'All fields are required.');
-                  return;
-                }
+                setDialogState(() {});
                 try {
-                  final manager = await widget.superAdminService.createManager(
-                      name: name.text,
-                      managerId: id.text,
-                      password: password.text);
-                  if (mounted) {
-                    setState(() => _managers = [..._managers, manager]);
-                  }
+                  await widget.superAdminService.deleteManager(manager.id);
+                  if (!mounted) return;
+                  setState(() {
+                    _managers = _managers.where((item) => item.id != manager.id).toList();
+                    _visibleManagerPasswords.remove(manager.id);
+                  });
                   if (dialogContext.mounted) Navigator.pop(dialogContext);
+                  ScaffoldMessenger.of(this.context).showSnackBar(
+                    const SnackBar(content: Text('Manager deleted')),
+                  );
                 } catch (_) {
-                  setDialogState(() => error =
-                      'Unable to create manager. Check the ID and try again.');
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(content: Text('Unable to remove manager.')),
+                    );
+                  }
                 }
               },
-              child: const Text('Create Manager'),
+              child: const Text('Remove'),
             ),
           ],
         ),
       ),
     );
-    name.dispose();
-    id.dispose();
-    password.dispose();
+  }
+
+  Future<void> _showAddManager() async {
+    final manager = await showDialog<ManagedManager>(
+      context: context,
+      builder: (_) => _CreateManagerDialog(
+        superAdminService: widget.superAdminService,
+      ),
+    );
+    if (!mounted || manager == null) return;
+    setState(() => _managers = [..._managers, manager]);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Manager created')),
+    );
+  }
+}
+
+class _CreateManagerDialog extends StatefulWidget {
+  const _CreateManagerDialog({required this.superAdminService});
+
+  final SuperAdminService superAdminService;
+
+  @override
+  State<_CreateManagerDialog> createState() => _CreateManagerDialogState();
+}
+
+class _CreateManagerDialogState extends State<_CreateManagerDialog> {
+  final _nameController = TextEditingController();
+  final _idController = TextEditingController();
+  final _passwordController = TextEditingController();
+  String? _error;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _idController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_nameController.text.trim().isEmpty ||
+        _idController.text.trim().isEmpty ||
+        _passwordController.text.isEmpty) {
+      setState(() => _error = 'All fields are required.');
+      return;
+    }
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      final manager = await widget.superAdminService.createManager(
+        name: _nameController.text,
+        managerId: _idController.text,
+        password: _passwordController.text,
+      );
+      if (!mounted) return;
+      Navigator.pop(context, manager);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _error = 'Unable to create manager. Check the ID and try again.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create Manager'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(labelText: 'Manager Name'),
+          ),
+          TextField(
+            controller: _idController,
+            decoration: const InputDecoration(labelText: 'Manager ID'),
+          ),
+          TextField(
+            controller: _passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: 'Password'),
+          ),
+          if (_error != null)
+            Text(_error!, style: const TextStyle(color: AppTheme.error)),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _submitting ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _submitting ? null : _submit,
+          child: _submitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Create Manager'),
+        ),
+      ],
+    );
   }
 }

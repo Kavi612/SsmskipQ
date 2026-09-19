@@ -98,43 +98,48 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
   }
 
   Future<void> _cancelOrder() async {
-    final confirmed = await showDialog<bool>(
+    await showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Cancel this order?'),
-        content: const Text('This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Keep Order'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Cancel Order'),
-          ),
-        ],
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Cancel this order?'),
+          content: const Text('This cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Keep Order'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                setDialogState(() => _cancelling = true);
+                try {
+                  final updated = await widget.ordersService.cancelOrder(widget.orderId);
+                  if (!mounted) return;
+                  setState(() {
+                    _order = updated;
+                    _cancelling = false;
+                  });
+                  if (dialogContext.mounted) Navigator.pop(dialogContext);
+                  ScaffoldMessenger.of(this.context).showSnackBar(
+                    const SnackBar(content: Text('Order cancelled')),
+                  );
+                } catch (_) {
+                  if (dialogContext.mounted) {
+                    setDialogState(() => _cancelling = false);
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(content: Text('Unable to cancel order. It may already be accepted.')),
+                    );
+                  }
+                }
+              },
+              child: _cancelling
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Cancel Order'),
+            ),
+          ],
+        ),
       ),
     );
-    if (confirmed != true || !mounted) return;
-
-    setState(() => _cancelling = true);
-    try {
-      final updated = await widget.ordersService.cancelOrder(widget.orderId);
-      if (!mounted) return;
-      setState(() {
-        _order = updated;
-        _cancelling = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Order cancelled')),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _cancelling = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to cancel order. It may already be accepted.')),
-      );
-    }
   }
 
   @override

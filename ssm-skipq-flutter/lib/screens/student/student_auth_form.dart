@@ -76,7 +76,14 @@ class _StudentAuthFormState extends State<StudentAuthForm> {
       } else {
         await auth.loginStudent(_mobileController.text.trim());
       }
-      if (mounted) context.go('/student');
+      if (mounted) {
+        if (_isRegister) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Account created')),
+          );
+        }
+        context.go('/student');
+      }
     } catch (e) {
       setState(() =>
           _error = auth.messageFromError(e, fallback: 'Unable to connect.'));
