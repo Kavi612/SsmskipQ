@@ -41,6 +41,14 @@ class _ManagerShellState extends State<ManagerShell> {
   }
 
   @override
+  void didUpdateWidget(covariant ManagerShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTab != widget.initialTab) {
+      setState(() => _index = widget.initialTab.clamp(0, 4));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final pages = [
       ManagerDashboardScreen(

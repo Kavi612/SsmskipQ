@@ -253,20 +253,57 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
   }
 
   Widget _timeField(TextEditingController controller, String label) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 2),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _pickTime(controller, label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            const SizedBox(height: 5),
+            Row(
+              children: [
+                const Icon(Icons.access_time, color: AppTheme.primary, size: 18),
+                const SizedBox(width: 6),
+                Text(controller.text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Future<void> _pickTime(TextEditingController controller, String label) async {
+    final initialTime = _parseTime(controller.text) ?? TimeOfDay.now();
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      helpText: 'Select $label time',
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(primary: AppTheme.primary),
+        ),
+        child: child!,
+      ),
+    );
+    if (selected != null && mounted) {
+      setState(() => controller.text = selected.format(context));
+    }
+  }
+
+  TimeOfDay? _parseTime(String value) {
+    final match = RegExp(r'^(\d{1,2}):(\d{2})\s*(AM|PM)?$', caseSensitive: false).firstMatch(value.trim());
+    if (match == null) return null;
+    var hour = int.parse(match.group(1)!);
+    final minute = int.parse(match.group(2)!);
+    final meridiem = match.group(3)?.toUpperCase();
+    if (meridiem == 'PM' && hour < 12) hour += 12;
+    if (meridiem == 'AM' && hour == 12) hour = 0;
+    return TimeOfDay(hour: hour, minute: minute);
   }
 
   String _displayTime(String value) {
