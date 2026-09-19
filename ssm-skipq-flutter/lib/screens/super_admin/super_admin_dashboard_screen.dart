@@ -368,7 +368,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
             child: Icon(Icons.person_outline, color: AppTheme.primary)),
         title: Text(manager.name,
             style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text('${manager.managerId}  •  ${visible ? 'Password unavailable' : manager.passwordMasked}'),
+        subtitle: Text('${manager.managerId}  •  ${visible ? (manager.passwordPlain ?? 'Password unavailable') : manager.passwordMasked}'),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

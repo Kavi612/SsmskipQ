@@ -13,7 +13,9 @@ const guard = (req, res) => {
 
 export const listManagers = async (req, res) => {
   if (!guard(req, res)) return;
-  const managers = await Manager.find().select('managerId name').sort({ name: 1 });
+  const managers = await Manager.find()
+    .select('managerId name passwordPlain')
+    .sort({ name: 1 });
   return res.json({
     success: true,
     data: {
@@ -22,6 +24,7 @@ export const listManagers = async (req, res) => {
         managerId: manager.managerId,
         name: manager.name,
         passwordMasked: '********',
+        passwordPlain: manager.passwordPlain ?? null,
       })),
     },
   });
@@ -44,10 +47,19 @@ export const createManager = async (req, res) => {
     managerId: normalizedId,
     name: name.trim(),
     passwordHash: await bcrypt.hash(password, 12),
+    passwordPlain: password,
   });
   return res.status(201).json({
     success: true,
-    data: { manager: { id: manager._id, managerId: manager.managerId, name: manager.name, passwordMasked: '********' } },
+    data: {
+      manager: {
+        id: manager._id,
+        managerId: manager.managerId,
+        name: manager.name,
+        passwordMasked: '********',
+        passwordPlain: manager.passwordPlain,
+      },
+    },
   });
 };
 
