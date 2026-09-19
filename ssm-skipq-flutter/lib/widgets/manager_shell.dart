@@ -4,12 +4,12 @@ import '../services/feedback_service.dart';
 import '../services/menu_service.dart';
 import '../services/orders_service.dart';
 import '../services/socket_service.dart';
+import '../services/super_admin_service.dart';
 import '../screens/manager/manager_dashboard_screen.dart';
 import '../screens/manager/manager_feedback_screen.dart';
 import '../screens/manager/manager_menu_screen.dart';
 import '../screens/manager/manager_orders_screen.dart';
 import '../screens/manager/manager_profile_screen.dart';
-import '../screens/manager/manager_analytics_screen.dart';
 
 class ManagerShell extends StatefulWidget {
   const ManagerShell({
@@ -18,6 +18,7 @@ class ManagerShell extends StatefulWidget {
     required this.menuService,
     required this.feedbackService,
     required this.socketService,
+    required this.superAdminService,
     this.initialTab = 0,
   });
 
@@ -25,6 +26,7 @@ class ManagerShell extends StatefulWidget {
   final MenuService menuService;
   final FeedbackService feedbackService;
   final SocketService socketService;
+  final SuperAdminService superAdminService;
   final int initialTab;
 
   @override
@@ -37,14 +39,14 @@ class _ManagerShellState extends State<ManagerShell> {
   @override
   void initState() {
     super.initState();
-    _index = widget.initialTab.clamp(0, 4);
+    _index = widget.initialTab.clamp(0, 3);
   }
 
   @override
   void didUpdateWidget(covariant ManagerShell oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialTab != widget.initialTab) {
-      setState(() => _index = widget.initialTab.clamp(0, 4));
+      setState(() => _index = widget.initialTab.clamp(0, 3));
     }
   }
 
@@ -62,10 +64,6 @@ class _ManagerShellState extends State<ManagerShell> {
       ),
       ManagerMenuScreen(menuService: widget.menuService),
       ManagerFeedbackScreen(feedbackService: widget.feedbackService),
-      ManagerAnalyticsScreen(
-        ordersService: widget.ordersService,
-        menuService: widget.menuService,
-      ),
     ];
 
     return Scaffold(
@@ -77,7 +75,12 @@ class _ManagerShellState extends State<ManagerShell> {
             icon: const Icon(Icons.person_outline),
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ManagerProfileScreen()),
+                MaterialPageRoute(
+                    builder: (_) => ManagerProfileScreen(
+                          superAdminService: widget.superAdminService,
+                          ordersService: widget.ordersService,
+                          feedbackService: widget.feedbackService,
+                        )),
               );
             },
           ),
@@ -88,11 +91,22 @@ class _ManagerShellState extends State<ManagerShell> {
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
-          NavigationDestination(icon: Icon(Icons.list_alt_outlined), selectedIcon: Icon(Icons.list_alt), label: 'Orders'),
-          NavigationDestination(icon: Icon(Icons.restaurant_menu_outlined), selectedIcon: Icon(Icons.restaurant_menu), label: 'Master'),
-          NavigationDestination(icon: Icon(Icons.message_outlined), selectedIcon: Icon(Icons.message), label: 'Feedback'),
-          NavigationDestination(icon: Icon(Icons.analytics_outlined), selectedIcon: Icon(Icons.analytics), label: 'Analytics'),
+          NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard),
+              label: 'Dashboard'),
+          NavigationDestination(
+              icon: Icon(Icons.list_alt_outlined),
+              selectedIcon: Icon(Icons.list_alt),
+              label: 'Orders'),
+          NavigationDestination(
+              icon: Icon(Icons.restaurant_menu_outlined),
+              selectedIcon: Icon(Icons.restaurant_menu),
+              label: 'Master'),
+          NavigationDestination(
+              icon: Icon(Icons.message_outlined),
+              selectedIcon: Icon(Icons.message),
+              label: 'Feedback'),
         ],
       ),
     );

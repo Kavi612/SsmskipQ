@@ -5,9 +5,22 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/super_admin_service.dart';
+import '../../services/orders_service.dart';
+import '../../services/feedback_service.dart';
+import '../../screens/super_admin/super_admin_login_screen.dart';
 
 class ManagerProfileScreen extends StatelessWidget {
-  const ManagerProfileScreen({super.key});
+  const ManagerProfileScreen({
+    super.key,
+    required this.superAdminService,
+    required this.ordersService,
+    required this.feedbackService,
+  });
+
+  final SuperAdminService superAdminService;
+  final OrdersService ordersService;
+  final FeedbackService feedbackService;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +35,8 @@ class ManagerProfileScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Profile', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+              const Text('Profile',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
               const SizedBox(height: 20),
               Container(
                 width: double.infinity,
@@ -43,7 +57,8 @@ class ManagerProfileScreen extends StatelessWidget {
                           color: AppTheme.primaryMuted,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.person_outline, color: AppTheme.primary, size: 38),
+                        child: const Icon(Icons.person_outline,
+                            color: AppTheme.primary, size: 38),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -51,6 +66,20 @@ class ManagerProfileScreen extends StatelessWidget {
                     const SizedBox(height: 18),
                     _infoField('Manager ID', user?.managerId ?? ''),
                   ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => SuperAdminLoginScreen(
+                              superAdminService: superAdminService,
+                              ordersService: ordersService,
+                              feedbackService: feedbackService,
+                            )),
+                  ),
+                  child: const Text('Login as Super Admin?'),
                 ),
               ),
               const Spacer(),
@@ -76,9 +105,15 @@ class ManagerProfileScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+        Text(label,
+            style:
+                const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
         const SizedBox(height: 5),
-        Text(value, style: const TextStyle(color: AppTheme.text, fontSize: 18, fontWeight: FontWeight.w700)),
+        Text(value,
+            style: const TextStyle(
+                color: AppTheme.text,
+                fontSize: 18,
+                fontWeight: FontWeight.w700)),
       ],
     );
   }

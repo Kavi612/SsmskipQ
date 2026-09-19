@@ -18,7 +18,7 @@ class _ManagerFeedbackScreenState extends State<ManagerFeedbackScreen> {
   List<OrderFeedback> _feedback = [];
   bool _loading = true;
   String? _error;
-  int? _ratingFilter;
+  String _sortMode = 'All';
 
   @override
   void initState() {
@@ -42,9 +42,9 @@ class _ManagerFeedbackScreenState extends State<ManagerFeedbackScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredFeedback = _ratingFilter == null
-        ? _feedback
-        : _feedback.where((entry) => entry.rating == _ratingFilter).toList();
+    final todayFeedback = _feedback.where((entry) => isTodayIst(entry.createdAt)).toList();
+    final visibleFeedback = List<OrderFeedback>.of(todayFeedback)
+      ..sort(_compareFeedback);
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -53,11 +53,31 @@ class _ManagerFeedbackScreenState extends State<ManagerFeedbackScreen> {
         children: [
           const Text('Feedback', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
-          _ratingSummary(),
+          _ratingSummary(todayFeedback),
           const SizedBox(height: 12),
-          _ratingFilters(),
-          const SizedBox(height: 12),
-          Text('${filteredFeedback.length} review${filteredFeedback.length == 1 ? '' : 's'}'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              PopupMenuButton<String>(
+                initialValue: _sortMode,
+                onSelected: (value) => setState(() => _sortMode = value),
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'All', child: Text('All')),
+                  PopupMenuItem(value: 'Most Helpful', child: Text('Most Helpful')),
+                  PopupMenuItem(value: 'Most Recent', child: Text('Most Recent')),
+                  PopupMenuItem(value: 'Positive First', child: Text('Positive First')),
+                  PopupMenuItem(value: 'Negative First', child: Text('Negative First')),
+                ],
+                child: Row(
+                  children: [
+                    Text(_sortMode, style: const TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.w700)),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.keyboard_arrow_down, color: AppTheme.primary),
+                  ],
+                ),
+              ),
+            ],
+          ),
           if (_loading)
             const Padding(
               padding: EdgeInsets.all(24),
@@ -65,13 +85,13 @@ class _ManagerFeedbackScreenState extends State<ManagerFeedbackScreen> {
             )
           else if (_error != null)
             Text(_error!, style: const TextStyle(color: AppTheme.error))
-          else if (filteredFeedback.isEmpty)
+          else if (visibleFeedback.isEmpty)
             const Padding(
               padding: EdgeInsets.all(24),
-              child: Text('No matching feedback found.'),
+              child: Text('No reviews yet today - check back later.'),
             )
           else
-            ...filteredFeedback.map(
+            ...visibleFeedback.map(
               (entry) => Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: Padding(
@@ -106,11 +126,11 @@ class _ManagerFeedbackScreenState extends State<ManagerFeedbackScreen> {
     );
   }
 
-  Widget _ratingSummary() {
-    final total = _feedback.length;
+  Widget _ratingSummary(List<OrderFeedback> todayFeedback) {
+    final total = todayFeedback.length;
     final average = total == 0
         ? 0.0
-        : _feedback.fold<int>(0, (sum, entry) => sum + entry.rating) / total;
+        : todayFeedback.fold<int>(0, (sum, entry) => sum + entry.rating) / total;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -122,78 +142,76 @@ class _ManagerFeedbackScreenState extends State<ManagerFeedbackScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text('${average.toStringAsFixed(1)} ★', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: AppTheme.primary)),
-              const SizedBox(width: 10),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text('from $total review${total == 1 ? '' : 's'}', style: const TextStyle(color: AppTheme.textSecondary)),
+              SizedBox(
+                width: 112,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${average.toStringAsFixed(1)}/5', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: AppTheme.text)),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(99)),
+                      child: Text('${average.toStringAsFixed(1)} ★', style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w700, fontSize: 12)),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('$total Review${total == 1 ? '' : 's'}', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  children: List.generate(5, (index) {
+                    final rating = 5 - index;
+                    final count = todayFeedback.where((entry) => entry.rating == rating).length;
+                    final ratio = total == 0 ? 0.0 : count / total;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 7),
+                      child: Row(
+                        children: [
+                          SizedBox(width: 28, child: Text('$rating ★', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(99),
+                              child: Stack(
+                                children: [
+                                  Container(height: 8, color: Colors.white),
+                                  FractionallySizedBox(widthFactor: ratio, child: Container(height: 8, color: AppTheme.primary)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(width: 28, child: Text('$count', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary))),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          ...List.generate(5, (index) {
-            final rating = 5 - index;
-            final count = _feedback.where((entry) => entry.rating == rating).length;
-            final ratio = total == 0 ? 0.0 : count / total;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 7),
-              child: Row(
-                children: [
-                  SizedBox(width: 28, child: Text('$rating★', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(99),
-                      child: Stack(
-                        children: [
-                          Container(height: 8, color: Colors.white),
-                          FractionallySizedBox(
-                            widthFactor: ratio,
-                            child: Container(height: 8, color: AppTheme.primary),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(width: 24, child: Text('$count', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary))),
-                ],
-              ),
-            );
-          }),
         ],
       ),
     );
   }
 
-  Widget _ratingFilters() {
-    final filters = <({int? rating, String label})>[
-      (rating: null, label: 'All'),
-      (rating: 5, label: '5★'),
-      (rating: 4, label: '4★'),
-      (rating: 3, label: '3★'),
-      (rating: 2, label: '2★'),
-      (rating: 1, label: '1★'),
-    ];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: filters.map((filter) {
-          final selected = _ratingFilter == filter.rating;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(filter.label),
-              selected: selected,
-              selectedColor: AppTheme.primary,
-              labelStyle: TextStyle(color: selected ? Colors.white : AppTheme.textSecondary),
-              onSelected: (_) => setState(() => _ratingFilter = filter.rating),
-            ),
-          );
-        }).toList(),
-      ),
-    );
+  int _compareFeedback(OrderFeedback left, OrderFeedback right) {
+    switch (_sortMode) {
+      case 'All':
+        return 0;
+      case 'Positive First':
+        return right.rating.compareTo(left.rating);
+      case 'Negative First':
+        return left.rating.compareTo(right.rating);
+      case 'Most Helpful':
+      case 'Most Recent':
+      default:
+        return right.createdAt.compareTo(left.createdAt);
+    }
   }
+
 }

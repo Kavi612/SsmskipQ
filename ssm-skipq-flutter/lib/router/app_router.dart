@@ -37,8 +37,7 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
       if (auth.isLoading) return null;
 
       final loc = state.matchedLocation;
-      final isPublic = loc == '/' ||
-          loc == '/manager/login';
+      final isPublic = loc == '/' || loc == '/manager/login';
 
       if (auth.user == null && !isPublic) {
         return '/';
@@ -54,7 +53,9 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
     routes: [
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/student/login', redirect: (_, __) => '/'),
-      GoRoute(path: '/manager/login', builder: (_, __) => const ManagerLoginScreen()),
+      GoRoute(
+          path: '/manager/login',
+          builder: (_, __) => const ManagerLoginScreen()),
       GoRoute(
         path: '/student',
         builder: (_, state) => StudentShell(
@@ -99,7 +100,7 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
             initialOrder: order,
             ordersService: services.ordersService,
             socketService: services.socketService,
-              showBottomNavigation: true,
+            showBottomNavigation: true,
           );
         },
       ),
@@ -110,6 +111,7 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
           menuService: services.menuService,
           feedbackService: services.feedbackService,
           socketService: services.socketService,
+          superAdminService: services.superAdminService,
           initialTab: managerTabFromQuery(state.uri.queryParameters['tab']),
         ),
       ),
