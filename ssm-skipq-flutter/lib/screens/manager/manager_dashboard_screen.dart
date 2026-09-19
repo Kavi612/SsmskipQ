@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
@@ -16,10 +15,12 @@ class ManagerDashboardScreen extends StatefulWidget {
     super.key,
     required this.ordersService,
     required this.socketService,
+    required this.onViewOrders,
   });
 
   final OrdersService ordersService;
   final SocketService socketService;
+  final VoidCallback onViewOrders;
 
   @override
   State<ManagerDashboardScreen> createState() => _ManagerDashboardScreenState();
@@ -141,7 +142,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             ...recentOrders.take(5).map(_recentOrderRow),
           const SizedBox(height: 12),
           ElevatedButton(
-            onPressed: () => context.go('/manager?tab=orders'),
+            onPressed: widget.onViewOrders,
             child: const Text('VIEW ALL ORDERS'),
           ),
         ],
@@ -343,7 +344,7 @@ class _ManagerDashboardScreenState extends State<ManagerDashboardScreen> {
             const Icon(Icons.chevron_right, color: AppTheme.textMuted),
           ],
         ),
-        onTap: () => context.go('/manager?tab=orders'),
+        onTap: widget.onViewOrders,
       ),
     );
   }

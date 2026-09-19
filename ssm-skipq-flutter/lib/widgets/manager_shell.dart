@@ -54,6 +54,7 @@ class _ManagerShellState extends State<ManagerShell> {
       ManagerDashboardScreen(
         ordersService: widget.ordersService,
         socketService: widget.socketService,
+        onViewOrders: () => setState(() => _index = 1),
       ),
       ManagerOrdersScreen(
         ordersService: widget.ordersService,
