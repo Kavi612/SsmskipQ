@@ -241,7 +241,7 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
 
     Widget _volumeSection(List<Order> orders) {
       final buckets = _volumeBuckets(orders);
-      final chartMax = math.max(10000, ((buckets.map((bucket) => bucket.value).fold<num>(0, math.max) / 1000).ceil() * 1000));
+      final chartMax = _chartScaleMax(buckets.map((bucket) => bucket.value));
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -442,4 +442,16 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
 
     final MenuItem item;
     final int quantity;
+  }
+
+  int _chartScaleMax(Iterable<int> values) {
+    final maximum = values.fold<int>(0, math.max);
+    for (final step in [100, 1000, 5000, 10000]) {
+      if (maximum <= step) return step;
+    }
+    var scale = 20000;
+    while (scale < maximum) {
+      scale *= 2;
+    }
+    return scale;
   }

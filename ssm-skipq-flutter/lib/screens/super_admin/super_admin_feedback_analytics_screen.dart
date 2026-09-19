@@ -226,7 +226,8 @@ class _FeedbackAnalyticsScreenState extends State<FeedbackAnalyticsScreen> {
           .where((entry) => !entry.createdAt.isBefore(bucketStart) && entry.createdAt.isBefore(bucketEnd))
           .map((entry) => entry.rating)
           .toList();
-      points.add(_TrendPoint(label, values.isEmpty ? null : values.reduce((a, b) => a + b) / values.length));
+        points.add(_TrendPoint(
+          label, values.isEmpty ? 0 : values.reduce((a, b) => a + b) / values.length));
     }
 
     switch (_selection.period) {
@@ -364,16 +365,14 @@ class _RatingTrendPainter extends CustomPainter {
     for (var index = 0; index < points.length; index++) {
       final point = points[index];
       final x = left + xStep * index;
-      if (point.value == null) {
-        previous = null;
-      } else {
-        final y = top + chartHeight * (5 - point.value!.clamp(1, 5)) / 4;
-        final current = Offset(x, y);
-        if (previous != null) canvas.drawLine(previous, current, linePaint);
-        canvas.drawCircle(current, 4, dotPaint);
-        previous = current;
-      }
-      if (points.length <= 31 || index % math.max(1, points.length ~/ 12) == 0) {
+      final value = point.value ?? 0;
+      final y = top + chartHeight * (5 - value.clamp(0, 5)) / 5;
+      final current = Offset(x, y);
+      if (previous != null) canvas.drawLine(previous, current, linePaint);
+      canvas.drawCircle(current, 4, dotPaint);
+      previous = current;
+      final labelStep = math.max(1, (points.length / 8).ceil());
+      if (index % labelStep == 0 || index == points.length - 1) {
         _drawText(canvas, point.label, Offset(x - 14, size.height - 20), const TextStyle(fontSize: 9, color: AppTheme.textSecondary));
       }
     }

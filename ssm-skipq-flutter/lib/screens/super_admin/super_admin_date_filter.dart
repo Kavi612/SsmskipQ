@@ -47,7 +47,9 @@ class _SuperAdminDateFilterState extends State<SuperAdminDateFilter> {
     final now = DateTime.now();
     final initial = widget.initialSelection;
     _period = initial?.period ?? SuperAdminAnalyticsPeriod.day;
-    _day = initial?.range.start ?? now;
+    _day = initial?.period == SuperAdminAnalyticsPeriod.day
+      ? initial!.range.start
+      : now;
     _month = initial?.range.start ?? DateTime(now.year, now.month);
     _year = initial?.range.start.year ?? now.year;
     _customRange = _period == SuperAdminAnalyticsPeriod.custom
