@@ -80,6 +80,7 @@ class _ManagerShellState extends State<ManagerShell> {
                           superAdminService: widget.superAdminService,
                           ordersService: widget.ordersService,
                           feedbackService: widget.feedbackService,
+                          menuService: widget.menuService,
                         )),
               );
             },

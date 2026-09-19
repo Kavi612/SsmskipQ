@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/super_admin_service.dart';
 import '../../services/orders_service.dart';
 import '../../services/feedback_service.dart';
+import '../../services/menu_service.dart';
 import 'super_admin_dashboard_screen.dart';
 
 class SuperAdminShell extends StatefulWidget {
@@ -11,11 +12,13 @@ class SuperAdminShell extends StatefulWidget {
     required this.superAdminService,
     required this.ordersService,
     required this.feedbackService,
+    required this.menuService,
   });
 
   final SuperAdminService superAdminService;
   final OrdersService ordersService;
   final FeedbackService feedbackService;
+  final MenuService menuService;
 
   @override
   State<SuperAdminShell> createState() => _SuperAdminShellState();
@@ -31,6 +34,7 @@ class _SuperAdminShellState extends State<SuperAdminShell> {
         ordersService: widget.ordersService,
         feedbackService: widget.feedbackService,
         superAdminService: widget.superAdminService,
+        menuService: widget.menuService,
       ),
       const _SuperAdminPlaceholder(title: 'Orders'),
       const _SuperAdminPlaceholder(title: 'Feedback'),

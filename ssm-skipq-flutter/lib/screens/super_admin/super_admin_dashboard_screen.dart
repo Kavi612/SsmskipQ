@@ -6,8 +6,11 @@ import '../../models/feedback.dart';
 import '../../models/order.dart';
 import '../../models/super_admin.dart';
 import '../../services/feedback_service.dart';
+import '../../services/menu_service.dart';
 import '../../services/orders_service.dart';
 import '../../services/super_admin_service.dart';
+import 'super_admin_analytics_detail_screen.dart';
+import 'super_admin_date_filter.dart';
 
 class SuperAdminDashboardScreen extends StatefulWidget {
   const SuperAdminDashboardScreen({
@@ -15,18 +18,20 @@ class SuperAdminDashboardScreen extends StatefulWidget {
     required this.ordersService,
     required this.feedbackService,
     required this.superAdminService,
+    required this.menuService,
   });
 
   final OrdersService ordersService;
   final FeedbackService feedbackService;
   final SuperAdminService superAdminService;
+  final MenuService menuService;
 
   @override
   State<SuperAdminDashboardScreen> createState() =>
       _SuperAdminDashboardScreenState();
 }
 
-enum _AdminPeriod { day, week, month, year, custom }
+enum _AdminPeriod { day, month, year, custom }
 
 class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
   final _dateFormat = DateFormat('d MMM yyyy');
@@ -75,12 +80,6 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
         final start = DateTime(_day.year, _day.month, _day.day);
         return DateTimeRange(
             start: start, end: start.add(const Duration(days: 1)));
-      case _AdminPeriod.week:
-        final start = DateTime(_day.year, _day.month, _day.day)
-            .subtract(Duration(days: _day.weekday - 1))
-            .add(Duration(days: _weekOffset * 7));
-        return DateTimeRange(
-            start: start, end: start.add(const Duration(days: 7)));
       case _AdminPeriod.month:
         return DateTimeRange(
             start: DateTime(_month.year, _month.month),
@@ -115,9 +114,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
         : feedback.fold<int>(0, (sum, item) => sum + item.rating) /
             feedback.length;
     final revenue = orders.fold<num>(0, (sum, order) => sum + order.total);
-    final topItems = <String>{
-      for (final order in orders) ...order.items.map((item) => item.name)
-    }.length;
+    final cancelledOrders =
+        orders.where((order) => order.status == OrderStatus.cancelled).length;
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -131,7 +129,6 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
           const SizedBox(height: 18),
           _periodSelector(),
           if (_period == _AdminPeriod.day) _dayStrip(),
-          if (_period == _AdminPeriod.week) _weekStrip(),
           if (_period == _AdminPeriod.month) _monthStrip(),
           if (_period == _AdminPeriod.year) _yearStrip(),
           if (_period == _AdminPeriod.custom && _customRange != null)
@@ -151,14 +148,16 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
               mainAxisSpacing: 10,
               childAspectRatio: 1.18,
               children: [
-                _summaryCard('Total Orders', '${orders.length}',
-                    Icons.receipt_long_outlined),
-                _summaryCard('Average Rating',
-                    '${average.toStringAsFixed(1)} / 5', Icons.star_outline),
+                _summaryCard('Order Analytics', '${orders.length}',
+                  Icons.receipt_long_outlined, 'Order Analytics'),
+                _summaryCard('Feedback Analytics',
+                  '${average.toStringAsFixed(1)} / 5', Icons.star_outline,
+                  'Feedback Analytics'),
                 _summaryCard(
-                    'Total Revenue', '₹$revenue', Icons.payments_outlined),
-                _summaryCard(
-                    'Top Items', '$topItems', Icons.restaurant_menu_outlined),
+                  'Revenue Analytics', '₹$revenue', Icons.payments_outlined,
+                  'Revenue Analytics'),
+                _summaryCard('Cancellation Analytics', '$cancelledOrders',
+                  Icons.cancel_outlined, 'Cancellation Analytics'),
               ],
             ),
             const SizedBox(height: 22),
@@ -170,7 +169,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
   }
 
   Widget _periodSelector() {
-    const labels = ['Day', 'Week', 'Month', 'Year', 'Custom'];
+    const labels = ['Day', 'Month', 'Year', 'Custom Range'];
     final periods = _AdminPeriod.values;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -229,11 +228,6 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
     ]);
   }
 
-  Widget _weekStrip() => _stripCard([
-        for (var i = 0; i < 7; i++)
-          _pill(DateFormat('EEE d').format(_range.start.add(Duration(days: i))),
-              false, () {})
-      ], arrows: true);
   Widget _monthStrip() => _stripCard([
         for (var i = 1; i <= 12; i++)
           _pill(
@@ -289,26 +283,62 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
     );
   }
 
-  Widget _summaryCard(String label, String value, IconData icon) => Card(
-      child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: AppTheme.primary),
-                const SizedBox(height: 10),
-                Text(label,
-                    style: const TextStyle(
-                        color: AppTheme.textSecondary, fontSize: 12)),
-                const SizedBox(height: 4),
-                Text(value,
-                    style: const TextStyle(
-                        fontSize: 19, fontWeight: FontWeight.w800)),
-                const Align(
-                    alignment: Alignment.centerRight,
-                    child: Icon(Icons.chevron_right, color: AppTheme.textMuted))
-              ])));
+  Widget _summaryCard(
+          String label, String value, IconData icon, String detailTitle) =>
+      Card(
+        child: InkWell(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => SuperAdminAnalyticsDetailScreen(
+                title: detailTitle,
+                filter: SuperAdminDateFilterSelection(
+                  period: SuperAdminAnalyticsPeriod.values[_period.index],
+                  label: _filterValue,
+                  range: _range,
+                ),
+                ordersService: widget.ordersService,
+                menuService: widget.menuService,
+                feedbackService: widget.feedbackService,
+              ),
+            ),
+          ),
+          child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, color: AppTheme.primary),
+                    const SizedBox(height: 10),
+                    Text(label,
+                        style: const TextStyle(
+                            color: AppTheme.textSecondary, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    Text(value,
+                        style: const TextStyle(
+                            fontSize: 19, fontWeight: FontWeight.w800)),
+                    const Align(
+                        alignment: Alignment.centerRight,
+                        child: Icon(Icons.chevron_right,
+                            color: AppTheme.textMuted))
+                  ])),
+        ),
+      );
+
+  String get _filterValue {
+    switch (_period) {
+      case _AdminPeriod.day:
+        return _dateFormat.format(_day);
+      case _AdminPeriod.month:
+        return DateFormat('MMMM yyyy').format(_month);
+      case _AdminPeriod.year:
+        return '$_year';
+      case _AdminPeriod.custom:
+        return _customRange == null
+            ? 'Choose a range'
+            : '${_dateFormat.format(_range.start)} - ${_dateFormat.format(_range.end.subtract(const Duration(days: 1)))}';
+    }
+  }
 
   Widget _managerSection() {
     return Column(

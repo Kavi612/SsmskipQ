@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/super_admin_service.dart';
 import '../../services/orders_service.dart';
 import '../../services/feedback_service.dart';
+import '../../services/menu_service.dart';
 import '../../screens/super_admin/super_admin_login_screen.dart';
 
 class ManagerProfileScreen extends StatelessWidget {
@@ -16,11 +17,13 @@ class ManagerProfileScreen extends StatelessWidget {
     required this.superAdminService,
     required this.ordersService,
     required this.feedbackService,
+    required this.menuService,
   });
 
   final SuperAdminService superAdminService;
   final OrdersService ordersService;
   final FeedbackService feedbackService;
+  final MenuService menuService;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +80,7 @@ class ManagerProfileScreen extends StatelessWidget {
                               superAdminService: superAdminService,
                               ordersService: ordersService,
                               feedbackService: feedbackService,
+                              menuService: menuService,
                             )),
                   ),
                   child: const Text('Login as Super Admin?'),

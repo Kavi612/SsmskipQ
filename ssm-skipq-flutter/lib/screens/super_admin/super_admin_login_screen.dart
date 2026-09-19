@@ -4,6 +4,7 @@ import '../../config/theme.dart';
 import '../../services/super_admin_service.dart';
 import '../../services/orders_service.dart';
 import '../../services/feedback_service.dart';
+import '../../services/menu_service.dart';
 import 'super_admin_shell.dart';
 
 class SuperAdminLoginScreen extends StatefulWidget {
@@ -12,11 +13,13 @@ class SuperAdminLoginScreen extends StatefulWidget {
     required this.superAdminService,
     required this.ordersService,
     required this.feedbackService,
+    required this.menuService,
   });
 
   final SuperAdminService superAdminService;
   final OrdersService ordersService;
   final FeedbackService feedbackService;
+  final MenuService menuService;
 
   @override
   State<SuperAdminLoginScreen> createState() => _SuperAdminLoginScreenState();
@@ -48,6 +51,7 @@ class _SuperAdminLoginScreenState extends State<SuperAdminLoginScreen> {
                 superAdminService: widget.superAdminService,
                 ordersService: widget.ordersService,
                 feedbackService: widget.feedbackService,
+                menuService: widget.menuService,
               )),
     );
   }
