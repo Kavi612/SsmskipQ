@@ -131,6 +131,65 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Menu grid keeps every card at a uniform fixed height',
+      (tester) async {
+    final items = List.generate(
+      4,
+      (index) => MenuItem(
+        id: 'menu-$index',
+        name: index.isEven ? 'Bajji' : 'Chicken Fried Rice Very Long Name',
+        description: 'Tasty item',
+        price: 199,
+        categoryId: 'main',
+        categoryName: 'Main',
+        imageUrl: 'https://example.com/item.jpg',
+        isVeg: index.isEven,
+        available: true,
+        createdAt: DateTime.now(),
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider(
+        create: (_) => CartProvider(),
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: MediaQuery(
+            data: const MediaQueryData(size: Size(390, 844)),
+            child: Scaffold(
+              body: LayoutBuilder(
+                builder: (context, constraints) {
+                  final cardWidth = (constraints.maxWidth - 12) / 2;
+                  const targetHeight = 290.0;
+
+                  return GridView.count(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: cardWidth / targetHeight,
+                    children: items
+                        .map((item) => FoodCard(item: item, orderingOpen: true))
+                        .toList(),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final cardFinder = find.byType(FoodCard);
+    final cardHeights = List.generate(
+      cardFinder.evaluate().length,
+      (index) => tester.getRect(cardFinder.at(index)).height,
+    );
+
+    expect(cardHeights.length, 4);
+    expect(cardHeights.toSet().length, 1);
+    expect(find.text('ADD'), findsNWidgets(4));
+  });
+
   testWidgets('Track order shows the feedback form once the order is picked up',
       (tester) async {
     final order = Order(
