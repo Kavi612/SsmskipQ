@@ -24,13 +24,13 @@ class FoodCard extends StatelessWidget {
     final vegBadge = VegStatusBadge(isVeg: item.isVeg);
 
     return SizedBox(
-      height: 198,
+      height: 205,
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFFF7EFE9),
           borderRadius: BorderRadius.circular(16),
         ),
-        padding: const EdgeInsets.fromLTRB(6, 6, 6, 5),
+        padding: const EdgeInsets.fromLTRB(7, 7, 7, 4),
         child: Column(
           mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,10 +40,10 @@ class FoodCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: SizedBox(
-                    height: 106,
+                    height: 118,
                     width: double.infinity,
                     child: AspectRatio(
-                      aspectRatio: 1.18,
+                      aspectRatio: 1.08,
                       child: Image.network(
                         item.imageUrl,
                         fit: BoxFit.cover,
@@ -89,11 +89,11 @@ class FoodCard extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 5),
             Row(
               children: [
                 vegBadge,
-                const SizedBox(width: 6),
+                const SizedBox(width: 5),
                 Expanded(
                   child: Text(
                     item.name,
@@ -108,7 +108,7 @@ class FoodCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
