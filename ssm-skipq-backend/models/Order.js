@@ -79,6 +79,11 @@ const orderSchema = new mongoose.Schema(
       required: [true, 'Token number is required'],
       trim: true,
     },
+    note: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     razorpayOrderId: {
       type: String,
       trim: true,

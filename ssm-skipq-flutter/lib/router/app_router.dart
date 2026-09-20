@@ -69,7 +69,10 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
       ),
       GoRoute(
         path: '/student/cart',
-        builder: (_, __) => const StudentCartScreen(),
+        builder: (_, __) => StudentCartScreen(
+          menuService: services.menuService,
+          ordersService: services.ordersService,
+        ),
       ),
       GoRoute(
         path: '/student/checkout',

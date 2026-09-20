@@ -80,6 +80,7 @@ export const formatOrder = (order) => ({
   cancelledAt: order.cancelledAt,
   tokenNumber: order.tokenNumber,
   createdAt: order.createdAt,
+  note: order.note ?? '',
 });
 
 const emitOrderUpdate = (req, order) => {
@@ -102,8 +103,9 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    const { items, paymentMethod } = req.body;
+    const { items, paymentMethod, note } = req.body;
     const studentId = req.user.id;
+    const trimmedNote = typeof note === 'string' ? note.trim() : '';
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
@@ -218,6 +220,7 @@ export const createOrder = async (req, res) => {
             paymentStatus,
             status: 'PENDING',
             tokenNumber,
+            note: trimmedNote,
           },
         ],
         { session },
@@ -310,6 +313,7 @@ export const getMyOrders = async (req, res) => {
           status: order.status,
           tokenNumber: order.tokenNumber,
           createdAt: order.createdAt,
+          note: order.note ?? '',
           hasFeedback: feedbackOrderIds.has(order._id.toString()),
           feedback: feedbackByOrderId.has(order._id.toString())
             ? {

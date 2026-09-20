@@ -193,6 +193,10 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
                       ),
                       const SizedBox(height: 8),
                       ...order.items.map((item) => Text('${item.name} × ${item.quantity}')),
+                      if (order.note.trim().isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text('Note: ${order.note}', style: const TextStyle(color: AppTheme.textSecondary)),
+                      ],
                       const SizedBox(height: 8),
                       Text('₹${order.total} · ${order.paymentMethod.label} · '
                           '${order.paymentStatus == PaymentStatus.paid ? 'Paid' : 'Pending'}'),

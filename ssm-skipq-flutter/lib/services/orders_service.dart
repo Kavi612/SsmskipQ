@@ -31,7 +31,9 @@ class OrdersService {
     required num total,
     required PaymentMethod paymentMethod,
     PaymentStatus? paymentStatus,
+    String note = '',
   }) async {
+    final trimmedNote = note.trim();
     final response = await _api.dio.post<Map<String, dynamic>>(
       '/orders',
       data: {
@@ -39,6 +41,7 @@ class OrdersService {
         'total': total,
         'paymentMethod': paymentMethod.apiValue,
         if (paymentStatus != null) 'paymentStatus': paymentStatus.apiValue,
+        if (trimmedNote.isNotEmpty) 'note': trimmedNote,
       },
     );
     final data = response.data?['data'] as Map<String, dynamic>? ?? {};

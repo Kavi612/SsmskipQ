@@ -95,6 +95,7 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
             .toList(),
         total: cart.totalAmount,
         paymentMethod: _method,
+        note: cart.note,
       );
 
       Order finalOrder = result.order;
@@ -154,7 +155,6 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
     }
 
     final razorpayEnabled = _paymentConfig?.enabled ?? false;
-    final testMode = _paymentConfig?.testMode ?? false;
 
     return AppScaffold(
       title: 'Checkout',
@@ -196,16 +196,11 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
             )
           else ...[
             if (razorpayEnabled)
-              RadioListTile<PaymentMethod>(
+              RadioMenuButton<PaymentMethod>(
                 value: PaymentMethod.razorpay,
                 groupValue: _method,
                 onChanged: _processing ? null : (v) => setState(() => _method = v!),
-                title: const Text('Pay Online'),
-                subtitle: Text(
-                  testMode
-                      ? 'Razorpay test mode — UPI, cards, net banking (no real money)'
-                      : 'UPI · Cards · Net Banking',
-                ),
+                child: const Text('Pay Online'),
               )
             else
               Padding(
@@ -215,12 +210,11 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
                   style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
                 ),
               ),
-            RadioListTile<PaymentMethod>(
+            RadioMenuButton<PaymentMethod>(
               value: PaymentMethod.payAtCounter,
               groupValue: _method,
               onChanged: _processing ? null : (v) => setState(() => _method = v!),
-              title: const Text('Pay at Counter'),
-              subtitle: const Text('Pay when you collect your order'),
+              child: const Text('Pay at Counter'),
             ),
           ],
           if (_processing)

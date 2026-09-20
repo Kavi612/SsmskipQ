@@ -213,6 +213,7 @@ class Order {
     required this.status,
     required this.tokenNumber,
     required this.createdAt,
+    this.note = '',
     this.student,
     this.cancelledBy,
     this.cancelledAt,
@@ -229,6 +230,7 @@ class Order {
   final OrderStatus status;
   final String tokenNumber;
   final DateTime createdAt;
+  final String note;
   final OrderStudent? student;
   final String? cancelledBy;
   final DateTime? cancelledAt;
@@ -249,6 +251,7 @@ class Order {
       tokenNumber: json['tokenNumber'] as String? ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
+      note: json['note'] as String? ?? '',
       student: json['student'] != null
           ? OrderStudent.fromJson(json['student'] as Map<String, dynamic>)
           : null,
@@ -308,6 +311,8 @@ class CartItem {
     required this.imageUrl,
     required this.isVeg,
     required this.available,
+    this.categoryId = '',
+    this.categoryName = '',
   });
 
   final String menuItemId;
@@ -317,6 +322,8 @@ class CartItem {
   final String imageUrl;
   final bool isVeg;
   final bool available;
+  final String categoryId;
+  final String categoryName;
 
   CartItem copyWith({int? quantity}) {
     return CartItem(
@@ -327,6 +334,8 @@ class CartItem {
       imageUrl: imageUrl,
       isVeg: isVeg,
       available: available,
+      categoryId: categoryId,
+      categoryName: categoryName,
     );
   }
 }

@@ -369,38 +369,21 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
                 ),
               ),
               const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () => setState(() => _pureVeg = !_pureVeg),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 46,
-                  height: 28,
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: _pureVeg ? Colors.green : Colors.grey.shade400,
-                  ),
-                  child: Align(
-                    alignment:
-                        _pureVeg ? Alignment.centerRight : Alignment.centerLeft,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 20,
-                      height: 20,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.eco_rounded,
-                          size: 12,
-                          color: _pureVeg ? Colors.green : Colors.grey.shade600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              Switch.adaptive(
+                value: _pureVeg,
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: Colors.grey.shade400,
+                activeThumbColor: Colors.white,
+                activeTrackColor: Colors.green,
+                thumbIcon: WidgetStateProperty.resolveWith((states) {
+                  final selected = states.contains(WidgetState.selected);
+                  return Icon(
+                    Icons.eco_rounded,
+                    size: 12,
+                    color: selected ? Colors.green : Colors.grey.shade600,
+                  );
+                }),
+                onChanged: (value) => setState(() => _pureVeg = value),
               ),
             ],
           ),
