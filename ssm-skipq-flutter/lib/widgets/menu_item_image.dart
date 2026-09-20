@@ -22,6 +22,8 @@ class MenuItemImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final localAsset = MenuAssets.localAssetFor(item);
     final networkUrl = item.imageUrl.trim();
+    final safeWidth = width.isFinite ? width : 120.0;
+    final safeHeight = height.isFinite ? height : 120.0;
 
     return Semantics(
       image: true,
@@ -29,23 +31,23 @@ class MenuItemImage extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: Container(
-          width: width,
-          height: height,
+          width: safeWidth,
+          height: safeHeight,
           color: AppTheme.bgSubtle,
           child: networkUrl.isNotEmpty && localAsset != null
               ? FadeInImage(
                   placeholder: AssetImage(localAsset),
                   image: NetworkImage(networkUrl),
-                  width: width,
-                  height: height,
+                  width: safeWidth,
+                  height: safeHeight,
                   fit: BoxFit.cover,
                   imageErrorBuilder: (_, __, ___) => _buildFallback(localAsset),
                 )
               : networkUrl.isNotEmpty
                   ? Image.network(
                       networkUrl,
-                      width: width,
-                      height: height,
+                      width: safeWidth,
+                      height: safeHeight,
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, progress) {
                         if (progress == null) return child;
@@ -60,11 +62,14 @@ class MenuItemImage extends StatelessWidget {
   }
 
   Widget _buildFallback(String? localAsset) {
+    final safeWidth = width.isFinite ? width : 120.0;
+    final safeHeight = height.isFinite ? height : 120.0;
+
     if (localAsset != null) {
       return Image.asset(
         localAsset,
-        width: width,
-        height: height,
+        width: safeWidth,
+        height: safeHeight,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _placeholder(),
       );
@@ -73,6 +78,7 @@ class MenuItemImage extends StatelessWidget {
   }
 
   Widget _placeholder({bool showProgress = false}) {
+    final safeWidth = width.isFinite ? width : 120.0;
     return Center(
       child: showProgress
           ? const SizedBox(
@@ -83,7 +89,7 @@ class MenuItemImage extends StatelessWidget {
           : Icon(
               Icons.restaurant_menu,
               color: AppTheme.textMuted,
-              size: width * 0.34,
+              size: safeWidth * 0.34,
             ),
     );
   }
