@@ -18,8 +18,8 @@ extension OrderStatusExtensions on OrderStatus {
       case OrderStatus.confirmed:
       case OrderStatus.preparing:
       case OrderStatus.ready:
-        return true;
       case OrderStatus.pickedUp:
+        return true;
       case OrderStatus.cancelled:
         return false;
     }

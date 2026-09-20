@@ -124,4 +124,22 @@ void main() {
     expect(find.text('How was your order A001?'), findsOneWidget);
     expect(find.text('Submit Feedback'), findsOneWidget);
   });
+
+  test('picked-up order remains a tracked order for feedback flow', () {
+    final order = Order(
+      id: 'order-2',
+      studentId: 'student-2',
+      items: const [
+        OrderItem(menuItemId: 'item-2', name: 'Burger', price: 150, quantity: 1),
+      ],
+      total: 150,
+      paymentMethod: PaymentMethod.googlePay,
+      paymentStatus: PaymentStatus.paid,
+      status: OrderStatus.pickedUp,
+      tokenNumber: 'A002',
+      createdAt: DateTime.now(),
+    );
+
+    expect(getCurrentActiveOrderForStudent([order], orderId: order.id), isNotNull);
+  });
 }

@@ -40,10 +40,7 @@ class _StudentTrackOrderListScreenState
     widget.socketService.onOrderUpdated((order) {
       if (mounted && _activeOrder != null && order.id == _activeOrder!.id) {
         setState(() {
-          _activeOrder = order.status == OrderStatus.pickedUp ||
-                  order.status == OrderStatus.cancelled
-              ? null
-              : order;
+          _activeOrder = order.status == OrderStatus.cancelled ? null : order;
         });
       }
     });
