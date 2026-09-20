@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../models/menu.dart';
 import '../providers/cart_provider.dart';
-import 'menu_item_image.dart';
 import 'veg_status_badge.dart';
 
 class FoodCard extends StatelessWidget {
@@ -22,203 +21,139 @@ class FoodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
-    final qty = cart.getQuantity(item.id);
-    final isNewlyAdded = DateTime.now().difference(item.createdAt).inDays <= 7;
+    final vegBadge = VegStatusBadge(isVeg: item.isVeg);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final imageSize = constraints.maxWidth.clamp(120.0, 170.0);
-
-        return Card(
-          clipBehavior: Clip.antiAlias,
-          elevation: 0,
-          margin: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: const BorderSide(color: AppTheme.border),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(6),
-                child: SizedBox(
-                  width: constraints.maxWidth - 12,
-                  height: imageSize - 12,
-                  child: Stack(
-                    children: [
-                      AspectRatio(
-                        aspectRatio: 1,
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(18),
-                          ),
-                          child: MenuItemImage(
-                            item: item,
-                            width: double.infinity,
-                            height: double.infinity,
-                            borderRadius: 0,
-                          ),
-                        ),
+    return SizedBox(
+      height: 232,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7EFE9),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    height: 124,
+                    width: double.infinity,
+                    child: AspectRatio(
+                      aspectRatio: 1.15,
+                      child: Image.network(
+                        item.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: const Color(0xFFF7E1D2),
+                            child: const Icon(
+                              Icons.image_not_supported_outlined,
+                              size: 36,
+                              color: Color(0xFFB86A3D),
+                            ),
+                          );
+                        },
                       ),
-                      if (isNewlyAdded || isHighlyOrdered)
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (isHighlyOrdered)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFF7ED),
-                                    borderRadius: BorderRadius.circular(999),
-                                    border: Border.all(
-                                      color: const Color(0xFFF59E0B)
-                                          .withValues(alpha: 0.35),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Highly Ordered',
-                                    style: TextStyle(
-                                      color: Color(0xFFB45309),
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              if (isHighlyOrdered && isNewlyAdded)
-                                const SizedBox(width: 6),
-                              if (isNewlyAdded)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(999),
-                                    border: Border.all(
-                                      color: AppTheme.primary.withValues(
-                                          alpha: 0.25),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Newly added',
-                                    style: TextStyle(
-                                      color: AppTheme.primary,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        VegStatusBadge(isVeg: item.isVeg),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            item.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                if (isHighlyOrdered)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: const Color(0xFFF59E0B).withOpacity(0.35),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          '₹${item.price}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.primary,
-                            fontSize: 15,
-                          ),
+                      ),
+                      child: const Text(
+                        'Highly Ordered',
+                        style: TextStyle(
+                          color: Color(0xFFB45309),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
                         ),
-                        const Spacer(),
-                        if (!item.available)
-                          const Text(
-                            'Sold Out',
-                            style: TextStyle(color: AppTheme.error, fontSize: 12),
-                          )
-                        else if (!orderingOpen)
-                          const Text(
-                            'Closed',
-                            style: TextStyle(
-                              color: AppTheme.textMuted,
-                              fontSize: 12,
-                            ),
-                          )
-                        else if (qty == 0)
-                          FilledButton(
-                            onPressed: () => cart.addItem(
-                              menuItemId: item.id,
-                              name: item.name,
-                              price: item.price,
-                              imageUrl: item.imageUrl,
-                              isVeg: item.isVeg,
-                              available: item.available,
-                            ),
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size(58, 30),
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                            ),
-                            child: const Text('ADD'),
-                          )
-                        else
-                          Row(
-                            children: [
-                              IconButton(
-                                onPressed: () => cart.decrement(item.id),
-                                icon: const Icon(Icons.remove_circle_outline),
-                                constraints: const BoxConstraints(),
-                                padding: EdgeInsets.zero,
-                              ),
-                              Text(
-                                '$qty',
-                                style: const TextStyle(fontWeight: FontWeight.w700),
-                              ),
-                              IconButton(
-                                onPressed: () => cart.increment(item.id),
-                                icon: const Icon(Icons.add_circle_outline),
-                                constraints: const BoxConstraints(),
-                                padding: EdgeInsets.zero,
-                              ),
-                            ],
-                          ),
-                      ],
+                      ),
                     ),
-                  ],
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                vegBadge,
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    item.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+            const SizedBox(height: 3),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  '₹${item.price}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.5,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFE4101),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 32),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 0,
+                  ),
+                  onPressed: () => cart.addItem(
+                    menuItemId: item.id,
+                    name: item.name,
+                    price: item.price,
+                    imageUrl: item.imageUrl,
+                    isVeg: item.isVeg,
+                    available: item.available,
+                  ),
+                  child: const Text(
+                    'ADD',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
