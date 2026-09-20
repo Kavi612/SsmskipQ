@@ -20,34 +20,26 @@ class FoodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
-    final qty = cart.getQuantity(item.id);
     final isNewlyAdded = DateTime.now().difference(item.createdAt).inDays <= 7;
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: AppTheme.border),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Stack(
             children: [
               AspectRatio(
                 aspectRatio: 1,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(18),
-                  ),
-                  child: MenuItemImage(
-                    item: item,
-                    width: double.infinity,
-                    height: double.infinity,
-                    borderRadius: 0,
-                  ),
+                child: MenuItemImage(
+                  item: item,
+                  width: double.infinity,
+                  height: double.infinity,
+                  borderRadius: 0,
                 ),
               ),
               if (isNewlyAdded)
@@ -79,53 +71,35 @@ class FoodCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     VegStatusBadge(isVeg: item.isVeg),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         item.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      '₹${item.price}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.primary,
-                        fontSize: 15,
+                    Expanded(
+                      child: Text(
+                        '₹${item.price}',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
-                    const Spacer(),
-                    if (!item.available)
-                      const Text(
-                        'Sold Out',
-                        style: TextStyle(color: AppTheme.error, fontSize: 12),
-                      )
-                    else if (!orderingOpen)
-                      const Text(
-                        'Closed',
-                        style:
-                            TextStyle(color: AppTheme.textMuted, fontSize: 12),
-                      )
-                    else if (qty == 0)
-                      FilledButton(
+                    if (item.available && orderingOpen)
+                      ElevatedButton(
                         onPressed: () => cart.addItem(
                           menuItemId: item.id,
                           name: item.name,
@@ -134,7 +108,7 @@ class FoodCard extends StatelessWidget {
                           isVeg: item.isVeg,
                           available: item.available,
                         ),
-                        style: FilledButton.styleFrom(
+                        style: ElevatedButton.styleFrom(
                           minimumSize: const Size(58, 30),
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           shape: RoundedRectangleBorder(
@@ -143,26 +117,18 @@ class FoodCard extends StatelessWidget {
                         ),
                         child: const Text('ADD'),
                       )
+                    else if (!item.available)
+                      const Text(
+                        'Sold Out',
+                        style: TextStyle(color: AppTheme.error, fontSize: 12),
+                      )
                     else
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: () => cart.decrement(item.id),
-                            icon: const Icon(Icons.remove_circle_outline),
-                            constraints: const BoxConstraints(),
-                            padding: EdgeInsets.zero,
-                          ),
-                          Text(
-                            '$qty',
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          IconButton(
-                            onPressed: () => cart.increment(item.id),
-                            icon: const Icon(Icons.add_circle_outline),
-                            constraints: const BoxConstraints(),
-                            padding: EdgeInsets.zero,
-                          ),
-                        ],
+                      const Text(
+                        'Closed',
+                        style: TextStyle(
+                          color: AppTheme.textMuted,
+                          fontSize: 12,
+                        ),
                       ),
                   ],
                 ),
