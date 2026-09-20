@@ -109,7 +109,7 @@ class _StudentOrdersScreenState extends State<StudentOrdersScreen> {
           const SnackBar(content: Text('Items added to cart')),
         );
       }
-      if (mounted) context.go('/student/cart');
+      if (mounted) context.go('/student?tab=cart');
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -82,66 +82,74 @@ class _SplashScreenState extends State<SplashScreen>
         child: Stack(
           children: [
             Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedBuilder(
-                      animation: _heroController,
-                      builder: (context, child) {
-                        final y = Tween<double>(begin: 0, end: -10)
-                            .animate(CurvedAnimation(
-                              parent: _heroController,
-                              curve: Curves.easeInOut,
-                            ))
-                            .value;
-                        return Transform.translate(
-                          offset: Offset(0, y),
-                          child: child,
-                        );
-                      },
-                      child: FadeTransition(
-                        opacity: _entranceOpacity,
-                        child: ScaleTransition(
-                          scale: _entranceScale,
-                          child: SizedBox(
-                            width: heroWidth,
-                            child: Image.asset(
-                              AppAssets.splashHero,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => Icon(
-                                Icons.restaurant_menu,
-                                size: heroWidth * 0.5,
-                                color: Colors.white.withValues(alpha: 0.9),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: MediaQuery.sizeOf(context).height - 64,
+                    maxWidth: 320,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      AnimatedBuilder(
+                        animation: _heroController,
+                        builder: (context, child) {
+                          final y = Tween<double>(begin: 0, end: -10)
+                              .animate(CurvedAnimation(
+                                parent: _heroController,
+                                curve: Curves.easeInOut,
+                              ))
+                              .value;
+                          return Transform.translate(
+                            offset: Offset(0, y),
+                            child: child,
+                          );
+                        },
+                        child: FadeTransition(
+                          opacity: _entranceOpacity,
+                          child: ScaleTransition(
+                            scale: _entranceScale,
+                            child: SizedBox(
+                              width: heroWidth,
+                              child: Image.asset(
+                                AppAssets.splashHero,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => Icon(
+                                  Icons.restaurant_menu,
+                                  size: heroWidth * 0.5,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'SkipQ@SSM',
-                      style: displayFont.copyWith(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: -0.02,
+                      const SizedBox(height: 24),
+                      Text(
+                        'SkipQ@SSM',
+                        style: displayFont.copyWith(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: -0.02,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Skip the Queue. Grab Your Meal.',
-                      textAlign: TextAlign.center,
-                      style: bodyFont.copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white.withValues(alpha: 0.92),
-                        height: 1.75,
+                      const SizedBox(height: 12),
+                      Text(
+                        'Skip the Queue. Grab Your Meal.',
+                        textAlign: TextAlign.center,
+                        style: bodyFont.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withValues(alpha: 0.92),
+                          height: 1.75,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

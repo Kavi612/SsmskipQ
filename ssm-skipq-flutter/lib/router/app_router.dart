@@ -70,11 +70,7 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
       ),
       GoRoute(
         path: '/student/cart',
-        builder: (_, __) => StudentCartScreen(
-          menuService: services.menuService,
-          ordersService: services.ordersService,
-          paymentService: services.paymentService,
-        ),
+        redirect: (_, __) => '/student?tab=cart',
       ),
       GoRoute(
         path: '/student/checkout',

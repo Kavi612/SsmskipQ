@@ -24,15 +24,16 @@ class FoodCard extends StatelessWidget {
     final vegBadge = VegStatusBadge(isVeg: item.isVeg);
 
     return SizedBox(
-      height: 205,
+      width: 170,
+      height: 240,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFFF7EFE9),
-          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFFFCEEE6),
+          borderRadius: BorderRadius.circular(14),
         ),
-        padding: const EdgeInsets.fromLTRB(7, 7, 7, 4),
+        padding: const EdgeInsets.all(8),
         child: Column(
-          mainAxisSize: MainAxisSize.max,
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Stack(
@@ -89,7 +90,7 @@ class FoodCard extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 8),
             Row(
               children: [
                 vegBadge,
@@ -108,7 +109,7 @@ class FoodCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 6),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -125,8 +126,8 @@ class FoodCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFE4101),
                     foregroundColor: Colors.white,
-                    minimumSize: const Size(0, 32),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    minimumSize: const Size(0, 26),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),

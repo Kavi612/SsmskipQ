@@ -425,7 +425,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
                 crossAxisCount: 2,
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
-                childAspectRatio: 0.82,
+                childAspectRatio: 0.72,
               ),
               itemCount: _filtered.length,
               itemBuilder: (context, index) {

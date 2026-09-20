@@ -15,7 +15,7 @@ class StudentBottomNavigationBar extends StatelessWidget {
         context.go('/student');
         break;
       case 1:
-        context.go('/student/cart');
+        context.go('/student?tab=cart');
         break;
       case 2:
         context.go('/student?tab=track');

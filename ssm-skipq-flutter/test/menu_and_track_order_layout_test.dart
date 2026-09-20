@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ssm_skipq/config/theme.dart';
 import 'package:ssm_skipq/models/feedback.dart';
@@ -12,6 +13,7 @@ import 'package:ssm_skipq/services/feedback_service.dart';
 import 'package:ssm_skipq/services/orders_service.dart';
 import 'package:ssm_skipq/services/socket_service.dart';
 import 'package:ssm_skipq/widgets/food_card.dart';
+import 'package:ssm_skipq/widgets/student_bottom_navigation_bar.dart';
 
 class FakeOrdersService extends OrdersService {
   FakeOrdersService() : super(ApiClient());
@@ -53,6 +55,31 @@ class FakeFeedbackService extends FeedbackService {
 }
 
 void main() {
+  testWidgets('Cart tab stays inside the student shell route', (tester) async {
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, __) => const Scaffold(
+            body: StudentBottomNavigationBar(selectedIndex: 0),
+          ),
+        ),
+        GoRoute(
+          path: '/student',
+          builder: (_, __) => const Scaffold(body: Text('student shell')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.tap(find.text('Cart'));
+    await tester.pumpAndSettle();
+
+    expect(router.routerDelegate.currentConfiguration.uri.toString(),
+        '/student?tab=cart');
+  });
+
   testWidgets('FoodCard shows Highly Ordered badge without changing layout',
       (tester) async {
     final item = MenuItem(

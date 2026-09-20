@@ -159,7 +159,7 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
     return AppScaffold(
       title: 'Checkout',
       showBack: true,
-      backTo: '/student/cart',
+      backTo: '/student?tab=cart',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
