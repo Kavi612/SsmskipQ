@@ -32,6 +32,7 @@ class MenuItem {
     required this.imageUrl,
     required this.isVeg,
     required this.available,
+    required this.createdAt,
   });
 
   final String id;
@@ -43,6 +44,7 @@ class MenuItem {
   final String imageUrl;
   final bool isVeg;
   final bool available;
+  final DateTime createdAt;
 
   MenuItem copyWith({
     String? name,
@@ -53,6 +55,7 @@ class MenuItem {
     String? imageUrl,
     bool? isVeg,
     bool? available,
+    DateTime? createdAt,
   }) {
     return MenuItem(
       id: id,
@@ -64,6 +67,7 @@ class MenuItem {
       imageUrl: imageUrl ?? this.imageUrl,
       isVeg: isVeg ?? this.isVeg,
       available: available ?? this.available,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 
@@ -78,6 +82,8 @@ class MenuItem {
       imageUrl: json['imageUrl'] as String? ?? '',
       isVeg: json['isVeg'] as bool? ?? true,
       available: json['available'] as bool? ?? true,
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.now(),
     );
   }
 }

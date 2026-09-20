@@ -23,7 +23,8 @@ class StudentCartScreen extends StatelessWidget {
         body: EmptyState(
           icon: Icons.shopping_bag_outlined,
           title: 'Your cart is empty',
-          message: 'Browse the menu and add your favourite dishes to get started.',
+          message:
+              'Browse the menu and add your favourite dishes to get started.',
           actionLabel: 'Browse Menu',
           onAction: () => context.go('/student'),
         ),
@@ -59,6 +60,7 @@ class StudentCartScreen extends StatelessWidget {
                           imageUrl: item.imageUrl,
                           isVeg: item.isVeg,
                           available: item.available,
+                          createdAt: DateTime.now(),
                         ),
                         width: 48,
                         height: 48,
@@ -93,9 +95,14 @@ class StudentCartScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                    const Text('Total',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w700)),
                     Text('₹${cart.totalAmount}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.primary)),
+                        style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.primary)),
                   ],
                 ),
                 const SizedBox(height: 12),

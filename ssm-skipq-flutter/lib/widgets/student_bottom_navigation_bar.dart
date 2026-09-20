@@ -15,7 +15,7 @@ class StudentBottomNavigationBar extends StatelessWidget {
         context.go('/student');
         break;
       case 1:
-        context.go('/student?tab=orders');
+        context.go('/student/cart');
         break;
       case 2:
         context.go('/student?tab=track');
@@ -38,9 +38,9 @@ class StudentBottomNavigationBar extends StatelessWidget {
           label: 'Home',
         ),
         NavigationDestination(
-          icon: Icon(Icons.receipt_long_outlined),
-          selectedIcon: Icon(Icons.receipt_long),
-          label: 'Orders',
+          icon: Icon(Icons.shopping_cart_outlined),
+          selectedIcon: Icon(Icons.shopping_cart),
+          label: 'Cart',
         ),
         NavigationDestination(
           icon: Icon(Icons.list_alt_outlined),

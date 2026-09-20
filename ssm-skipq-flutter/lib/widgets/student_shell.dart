@@ -8,8 +8,8 @@ import '../services/menu_service.dart';
 import '../services/orders_service.dart';
 import '../services/socket_service.dart';
 import '../services/feedback_service.dart';
+import '../screens/student/student_cart_screen.dart';
 import '../screens/student/student_home_screen.dart';
-import '../screens/student/student_orders_screen.dart';
 import '../screens/student/student_track_order_list_screen.dart';
 import '../screens/student/student_profile_screen.dart';
 import 'student_bottom_navigation_bar.dart';
@@ -59,14 +59,10 @@ class _StudentShellState extends State<StudentShell> {
     final tabs = [
       StudentHomeScreen(
         menuService: widget.menuService,
+        ordersService: widget.ordersService,
         refreshToken: _homeRefreshToken,
       ),
-      StudentOrdersScreen(
-        ordersService: widget.ordersService,
-        menuService: widget.menuService,
-        feedbackService: widget.feedbackService,
-        socketService: widget.socketService,
-      ),
+      const StudentCartScreen(),
       StudentTrackOrderListScreen(
         ordersService: widget.ordersService,
         socketService: widget.socketService,

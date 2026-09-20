@@ -15,6 +15,7 @@ import '../widgets/student_shell.dart';
 
 int studentTabFromQuery(String? tab) {
   switch (tab) {
+    case 'cart':
     case 'orders':
       return 1;
     case 'track':
