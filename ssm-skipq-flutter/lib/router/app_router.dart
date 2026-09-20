@@ -7,8 +7,8 @@ import '../models/order.dart';
 import '../screens/manager/manager_login_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/student/student_checkout_screen.dart';
-import '../screens/student/student_cart_screen.dart';
 import '../screens/student/student_order_confirmation_screen.dart';
+import '../screens/student/student_order_history_screen.dart';
 import '../screens/student/student_track_order_screen.dart';
 import '../widgets/manager_shell.dart';
 import '../widgets/student_shell.dart';
@@ -71,6 +71,12 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
       GoRoute(
         path: '/student/cart',
         redirect: (_, __) => '/student?tab=cart',
+      ),
+      GoRoute(
+        path: '/student/order-history',
+        builder: (_, __) => StudentOrderHistoryScreen(
+          ordersService: services.ordersService,
+        ),
       ),
       GoRoute(
         path: '/student/checkout',

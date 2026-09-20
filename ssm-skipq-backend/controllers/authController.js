@@ -276,7 +276,7 @@ export const getMe = async (req, res) => {
 
 export const updateStudentProfile = async (req, res) => {
   try {
-    const fields = ['registerNumber', 'department', 'academicStream'];
+    const fields = ['name', 'registerNumber', 'department', 'academicStream'];
     const updates = Object.fromEntries(
       fields.map((field) => [field, String(req.body[field] ?? '').trim()]),
     );

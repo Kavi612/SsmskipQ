@@ -49,6 +49,7 @@ class AuthService {
   }
 
   Future<StudentUser> updateStudentProfile({
+    required String name,
     required String registerNumber,
     required String department,
     required String academicStream,
@@ -56,6 +57,7 @@ class AuthService {
     final response = await _api.dio.patch<Map<String, dynamic>>(
       '/auth/student-profile',
       data: {
+        'name': name,
         'registerNumber': registerNumber,
         'department': department,
         'academicStream': academicStream,

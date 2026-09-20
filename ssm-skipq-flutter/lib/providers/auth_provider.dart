@@ -66,11 +66,13 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> updateStudentProfile({
+    required String name,
     required String registerNumber,
     required String department,
     required String academicStream,
   }) async {
     _user = await _auth.updateStudentProfile(
+      name: name,
       registerNumber: registerNumber,
       department: department,
       academicStream: academicStream,

@@ -16,37 +16,102 @@ class StudentProfileScreen extends StatefulWidget {
 
 class _StudentProfileScreenState extends State<StudentProfileScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _registerNumberController = TextEditingController();
   final _departmentController = TextEditingController();
-  String? _academicStream;
+  final _courseController = TextEditingController();
+  Map<String, String>? _originalValues;
+  bool _editing = false;
   bool _saving = false;
   bool _initialized = false;
 
   @override
   void dispose() {
+    _nameController.dispose();
     _registerNumberController.dispose();
     _departmentController.dispose();
+    _courseController.dispose();
     super.dispose();
   }
 
   void _initialize(StudentUser? user) {
     if (_initialized || user == null) return;
+    _nameController.text = user.name;
     _registerNumberController.text = user.registerNumber;
     _departmentController.text = user.department;
-    _academicStream = user.academicStream.isEmpty ? null : user.academicStream;
+    _courseController.text = user.academicStream;
     _initialized = true;
+  }
+
+  Map<String, String> _currentValues() => {
+        'name': _nameController.text.trim(),
+        'registerNumber': _registerNumberController.text.trim(),
+        'department': _departmentController.text.trim(),
+        'academicStream': _courseController.text.trim(),
+      };
+
+  bool _hasChanges(Map<String, String> current, Map<String, String> original) {
+    return current['name'] != original['name'] ||
+        current['registerNumber'] != original['registerNumber'] ||
+        current['department'] != original['department'] ||
+        current['academicStream'] != original['academicStream'];
+  }
+
+  void _enterEdit(StudentUser user) {
+    setState(() {
+      _originalValues = {
+        'name': user.name,
+        'registerNumber': user.registerNumber,
+        'department': user.department,
+        'academicStream': user.academicStream,
+      };
+      _nameController.text = user.name;
+      _registerNumberController.text = user.registerNumber;
+      _departmentController.text = user.department;
+      _courseController.text = user.academicStream;
+      _editing = true;
+    });
+  }
+
+  void _cancelEdit() {
+    final original = _originalValues;
+    if (original == null) return;
+    setState(() {
+      _nameController.text = original['name']!;
+      _registerNumberController.text = original['registerNumber']!;
+      _departmentController.text = original['department']!;
+      _courseController.text = original['academicStream']!;
+      _editing = false;
+      _originalValues = null;
+    });
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final original = _originalValues;
+    final current = _currentValues();
+    if (original != null && !_hasChanges(current, original)) {
+      _cancelEdit();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No changes made')),
+        );
+      }
+      return;
+    }
     setState(() => _saving = true);
     try {
       await context.read<AuthProvider>().updateStudentProfile(
-            registerNumber: _registerNumberController.text.trim(),
-            department: _departmentController.text.trim(),
-            academicStream: _academicStream ?? '',
+            name: current['name']!,
+            registerNumber: current['registerNumber']!,
+            department: current['department']!,
+            academicStream: current['academicStream']!,
           );
       if (mounted) {
+        setState(() {
+          _editing = false;
+          _originalValues = null;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated')),
         );
@@ -55,7 +120,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
       if (mounted) {
         final auth = context.read<AuthProvider>();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(auth.messageFromError(error, fallback: 'Unable to update profile'))),
+          SnackBar(
+              content: Text(auth.messageFromError(error,
+                  fallback: 'Unable to update profile'))),
         );
       }
     } finally {
@@ -90,49 +157,65 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(user?.name ?? 'Student', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 4),
-                    Text(user?.mobile ?? '', style: const TextStyle(color: AppTheme.textSecondary)),
-                    const SizedBox(height: 20),
-                    TextFormField(
-                      controller: _registerNumberController,
-                      decoration: const InputDecoration(labelText: 'Register number'),
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _departmentController,
-                      decoration: const InputDecoration(labelText: 'Department'),
-                    ),
-                    const SizedBox(height: 14),
-                    DropdownButtonFormField<String>(
-                      initialValue: _academicStream,
-                      decoration: const InputDecoration(labelText: 'Academic stream'),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Engineering',
-                          child: Text('Engineering'),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text('Student profile',
+                              style: TextStyle(
+                                  fontSize: 22, fontWeight: FontWeight.w700)),
                         ),
-                        DropdownMenuItem(
-                          value: 'Arts & Science',
-                          child: Text('Arts & Science'),
-                        ),
+                        if (_editing)
+                          IconButton(
+                            onPressed: _saving ? null : _cancelEdit,
+                            tooltip: 'Discard changes',
+                            icon: const Icon(Icons.arrow_back),
+                          )
+                        else
+                          IconButton(
+                            onPressed:
+                                user == null ? null : () => _enterEdit(user),
+                            tooltip: 'Edit profile',
+                            icon: const Icon(Icons.edit_outlined),
+                          ),
                       ],
-                      onChanged: (value) => setState(() => _academicStream = value),
-                      validator: (value) => value == null
-                          ? 'Select an academic stream'
-                          : null,
                     ),
+                    const SizedBox(height: 4),
+                    Text(user?.mobile ?? '',
+                        style: const TextStyle(color: AppTheme.textSecondary)),
                     const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _saving ? null : _save,
-                        child: Text(_saving ? 'SAVING...' : 'SAVE PROFILE'),
+                    if (_editing) ...[
+                      _editField(_nameController, 'Name'),
+                      const SizedBox(height: 14),
+                      _editField(_registerNumberController, 'Register Number'),
+                      const SizedBox(height: 14),
+                      _editField(_departmentController, 'Department'),
+                      const SizedBox(height: 14),
+                      _editField(_courseController, 'Course of Study'),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _saving ? null : _save,
+                          child: Text(_saving ? 'SAVING...' : 'Save Profile'),
+                        ),
                       ),
-                    ),
+                    ] else ...[
+                      _readOnlyField('Name', user?.name ?? ''),
+                      _readOnlyField(
+                          'Register Number', user?.registerNumber ?? ''),
+                      _readOnlyField('Department', user?.department ?? ''),
+                      _readOnlyField(
+                          'Course of Study', user?.academicStream ?? ''),
+                    ],
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => context.go('/student/order-history'),
+              icon: const Icon(Icons.history),
+              label: const Text('Order History'),
             ),
             const SizedBox(height: 16),
             const Card(
@@ -141,7 +224,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
               color: AppTheme.bgSubtle,
               surfaceTintColor: Colors.transparent,
               child: ListTile(
-                leading: Icon(Icons.account_circle_outlined, color: AppTheme.textMuted),
+                leading: Icon(Icons.account_circle_outlined,
+                    color: AppTheme.textMuted),
                 title: Text('Google sign-in coming soon'),
                 subtitle: Text('Your mobile login remains active for now.'),
               ),
@@ -156,6 +240,32 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _editField(TextEditingController controller, String label) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(labelText: label),
+      validator: (value) =>
+          value == null || value.trim().isEmpty ? '$label is required' : null,
+    );
+  }
+
+  Widget _readOnlyField(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style:
+                  const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+          const SizedBox(height: 4),
+          Text(value.isEmpty ? 'Not provided' : value,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }
