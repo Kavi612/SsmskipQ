@@ -360,9 +360,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Pure Veg',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  Icon(
+                    Icons.eco_rounded,
+                    size: 18,
+                    color: _pureVeg ? Colors.green : Colors.grey.shade600,
                   ),
                   const SizedBox(width: 8),
                   Switch.adaptive(

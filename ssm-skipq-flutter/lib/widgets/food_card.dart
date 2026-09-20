@@ -42,7 +42,7 @@ class FoodCard extends StatelessWidget {
                 child: MenuItemImage(
                   item: item,
                   width: double.infinity,
-                  height: 118,
+                  height: 138,
                   borderRadius: 0,
                 ),
               ),
@@ -70,7 +70,7 @@ class FoodCard extends StatelessWidget {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -92,7 +92,7 @@ class FoodCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
