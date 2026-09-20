@@ -62,60 +62,60 @@ class FoodCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                    if (isNewlyAdded || isHighlyOrdered)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (isHighlyOrdered)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF7ED),
-                                  borderRadius: BorderRadius.circular(999),
-                                  border: Border.all(
-                                    color: const Color(0xFFF59E0B).withValues(
-                                      alpha: 0.35,
+                      if (isNewlyAdded || isHighlyOrdered)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isHighlyOrdered)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF7ED),
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: const Color(0xFFF59E0B)
+                                          .withValues(alpha: 0.35),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Highly Ordered',
+                                    style: TextStyle(
+                                      color: Color(0xFFB45309),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ),
-                                child: const Text(
-                                  'Highly Ordered',
-                                  style: TextStyle(
-                                    color: Color(0xFFB45309),
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
+                              if (isHighlyOrdered && isNewlyAdded)
+                                const SizedBox(width: 6),
+                              if (isNewlyAdded)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: AppTheme.primary.withValues(
+                                          alpha: 0.25),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Newly added',
+                                    style: TextStyle(
+                                      color: AppTheme.primary,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            if (isHighlyOrdered && isNewlyAdded)
-                              const SizedBox(width: 6),
-                            if (isNewlyAdded)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(999),
-                                  border: Border.all(
-                                    color: AppTheme.primary.withValues(alpha: 0.25),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Newly added',
-                                  style: TextStyle(
-                                    color: AppTheme.primary,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -165,8 +165,10 @@ class FoodCard extends StatelessWidget {
                         else if (!orderingOpen)
                           const Text(
                             'Closed',
-                            style:
-                                TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                            style: TextStyle(
+                              color: AppTheme.textMuted,
+                              fontSize: 12,
+                            ),
                           )
                         else if (qty == 0)
                           FilledButton(
