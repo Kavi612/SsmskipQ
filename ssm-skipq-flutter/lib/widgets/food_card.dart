@@ -30,6 +30,7 @@ class FoodCard extends StatelessWidget {
         final imageSize = constraints.maxWidth.clamp(120.0, 170.0);
 
         return Card(
+          clipBehavior: Clip.antiAlias,
           elevation: 0,
           margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(

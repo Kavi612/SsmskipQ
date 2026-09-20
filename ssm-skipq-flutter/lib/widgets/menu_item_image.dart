@@ -22,63 +22,81 @@ class MenuItemImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final localAsset = MenuAssets.localAssetFor(item);
     final networkUrl = item.imageUrl.trim();
-    final safeWidth = width.isFinite ? width : 120.0;
-    final safeHeight = height.isFinite ? height : 120.0;
 
-    return Semantics(
-      image: true,
-      label: '${item.name} image',
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: Container(
-          width: safeWidth,
-          height: safeHeight,
-          color: AppTheme.bgSubtle,
-          child: networkUrl.isNotEmpty && localAsset != null
-              ? FadeInImage(
-                  placeholder: AssetImage(localAsset),
-                  image: NetworkImage(networkUrl),
-                  width: safeWidth,
-                  height: safeHeight,
-                  fit: BoxFit.cover,
-                  imageErrorBuilder: (_, __, ___) => _buildFallback(localAsset),
-                )
-              : networkUrl.isNotEmpty
-                  ? Image.network(
-                      networkUrl,
-                      width: safeWidth,
-                      height: safeHeight,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final resolvedWidth = width.isFinite ? width : constraints.maxWidth;
+        final resolvedHeight = height.isFinite ? height : constraints.maxHeight;
+
+        return Semantics(
+          image: true,
+          label: '${item.name} image',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(borderRadius),
+            child: Container(
+              width: resolvedWidth,
+              height: resolvedHeight,
+              color: AppTheme.bgSubtle,
+              child: networkUrl.isNotEmpty && localAsset != null
+                  ? FadeInImage(
+                      placeholder: AssetImage(localAsset),
+                      image: NetworkImage(networkUrl),
+                      width: resolvedWidth,
+                      height: resolvedHeight,
                       fit: BoxFit.cover,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return _placeholder(showProgress: true);
-                      },
-                      errorBuilder: (_, __, ___) => _buildFallback(localAsset),
+                      imageErrorBuilder: (_, __, ___) =>
+                          _buildFallback(localAsset, resolvedWidth, resolvedHeight),
                     )
-                  : _buildFallback(localAsset),
-        ),
-      ),
+                  : networkUrl.isNotEmpty
+                      ? Image.network(
+                          networkUrl,
+                          width: resolvedWidth,
+                          height: resolvedHeight,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return _placeholder(
+                              showProgress: true,
+                              width: resolvedWidth,
+                              height: resolvedHeight,
+                            );
+                          },
+                          errorBuilder: (_, __, ___) =>
+                              _buildFallback(localAsset, resolvedWidth, resolvedHeight),
+                        )
+                      : _buildFallback(localAsset, resolvedWidth, resolvedHeight),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildFallback(String? localAsset) {
-    final safeWidth = width.isFinite ? width : 120.0;
-    final safeHeight = height.isFinite ? height : 120.0;
-
+  Widget _buildFallback(
+    String? localAsset,
+    double resolvedWidth,
+    double resolvedHeight,
+  ) {
     if (localAsset != null) {
       return Image.asset(
         localAsset,
-        width: safeWidth,
-        height: safeHeight,
+        width: resolvedWidth,
+        height: resolvedHeight,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _placeholder(),
+        errorBuilder: (_, __, ___) => _placeholder(
+          width: resolvedWidth,
+          height: resolvedHeight,
+        ),
       );
     }
-    return _placeholder();
+    return _placeholder(width: resolvedWidth, height: resolvedHeight);
   }
 
-  Widget _placeholder({bool showProgress = false}) {
-    final safeWidth = width.isFinite ? width : 120.0;
+  Widget _placeholder({
+    required double width,
+    required double height,
+    bool showProgress = false,
+  }) {
     return Center(
       child: showProgress
           ? const SizedBox(
@@ -89,7 +107,7 @@ class MenuItemImage extends StatelessWidget {
           : Icon(
               Icons.restaurant_menu,
               color: AppTheme.textMuted,
-              size: safeWidth * 0.34,
+              size: (width.isFinite ? width : height) * 0.34,
             ),
     );
   }

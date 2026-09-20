@@ -421,7 +421,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
             LayoutBuilder(
               builder: (context, constraints) {
                 final cardWidth = (constraints.maxWidth - 12) / 2;
-                const targetHeight = 270.0;
+                const targetHeight = 290.0;
 
                 final topHighlyOrderedIds = _topHighlyOrderedIds;
 
