@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,7 +12,6 @@ import '../../providers/ordering_window_provider.dart';
 import '../../services/menu_service.dart';
 import '../../services/orders_service.dart';
 import '../../utils/category_icons.dart';
-import '../../utils/helpers.dart';
 import '../../widgets/food_card.dart';
 
 class StudentHomeScreen extends StatefulWidget {
@@ -31,22 +32,44 @@ class StudentHomeScreen extends StatefulWidget {
 
 class _StudentHomeScreenState extends State<StudentHomeScreen>
     with WidgetsBindingObserver {
+  static const List<String> _greetingOptions = [
+    'What are you craving today, [Name]?',
+    'Hungry, [Name]? Let\'s fix that.',
+    'What sounds good right now, [Name]?',
+    'Craving something tasty, [Name]?',
+    'Ready to munch, [Name]?',
+    'Let\'s get you a great bite, [Name].',
+    'What would hit the spot today, [Name]?',
+    'Time for a tasty break, [Name]?',
+    'What are you in the mood for, [Name]?',
+    'Good food is calling, [Name].',
+    'Hungry enough yet, [Name]?',
+    'Your next favorite bite awaits, [Name].',
+    'What sounds delicious today, [Name]?',
+    'Let\'s make this meal count, [Name].',
+    'Food mood check: what\'s it going to be, [Name]?',
+  ];
+
   final ScrollController _categoryController = ScrollController();
   List<Category> _categories = [];
   List<MenuItem> _items = [];
   List<Order> _orderHistory = [];
   String? _selectedCategoryId;
   String _search = '';
-  bool _vegOnly = false;
-  bool _nonVegOnly = false;
+  bool _pureVeg = false;
   bool _highlyOrdered = false;
+  bool _newlyOrdered = false;
+  String? _priceSort;
+  bool _availableOnly = false;
   bool _loading = true;
   String? _error;
+  late String _greetingText;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _greetingText = _greetingOptions[Random().nextInt(_greetingOptions.length)];
     _load();
   }
 
@@ -106,23 +129,22 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
     return counts;
   }
 
-  void _toggleFilter(String value) {
+  void _onFilterSelected(String value) {
     setState(() {
       switch (value) {
-        case 'veg':
-          _vegOnly = !_vegOnly;
-          if (_vegOnly) {
-            _nonVegOnly = false;
-          }
-          break;
-        case 'nonVeg':
-          _nonVegOnly = !_nonVegOnly;
-          if (_nonVegOnly) {
-            _vegOnly = false;
-          }
-          break;
         case 'highlyOrdered':
           _highlyOrdered = !_highlyOrdered;
+          break;
+        case 'newlyAdded':
+          _newlyOrdered = !_newlyOrdered;
+          break;
+        case 'priceLowToHigh':
+          _priceSort =
+              _priceSort == 'priceLowToHigh' ? null : 'priceLowToHigh';
+          break;
+        case 'priceHighToLow':
+          _priceSort =
+              _priceSort == 'priceHighToLow' ? null : 'priceHighToLow';
           break;
       }
     });
@@ -136,9 +158,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
           ? 0
           : _categories.indexWhere((c) => c.id == categoryId);
       if (index < 0) return;
-      const itemWidth = 92.0;
-      final viewportWidth = _categoryController.position.viewportDimension;
-      final target = (index * itemWidth + itemWidth / 2) - (viewportWidth / 2);
+
+      const itemWidth = 98.0;
+      final target = (index * itemWidth) - itemWidth;
       final offset = target.clamp(
         _categoryController.position.minScrollExtent,
         _categoryController.position.maxScrollExtent,
@@ -152,16 +174,19 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
   }
 
   List<MenuItem> get _filtered {
-    var result = _items;
+    var result = List<MenuItem>.from(_items);
+
     if (_selectedCategoryId != null) {
       result =
           result.where((e) => e.categoryId == _selectedCategoryId).toList();
     }
-    if (_vegOnly) {
+
+    if (_pureVeg) {
       result = result.where((e) => e.isVeg).toList();
     }
-    if (_nonVegOnly) {
-      result = result.where((e) => !e.isVeg).toList();
+
+    if (_availableOnly) {
+      result = result.where((e) => e.available).toList();
     }
 
     final orderCounts = _historicalOrderCounts;
@@ -172,6 +197,17 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
       result = result.where((e) => ids.contains(e.id)).toList();
       result.sort(
           (a, b) => (orderCounts[b.id] ?? 0).compareTo(orderCounts[a.id] ?? 0));
+    }
+    if (_newlyOrdered) {
+      result = result.where((item) {
+        final diff = DateTime.now().difference(item.createdAt).inDays;
+        return diff <= 7;
+      }).toList();
+    }
+    if (_priceSort == 'priceLowToHigh') {
+      result.sort((a, b) => a.price.compareTo(b.price));
+    } else if (_priceSort == 'priceHighToLow') {
+      result.sort((a, b) => b.price.compareTo(a.price));
     }
 
     final q = _search.trim().toLowerCase();
@@ -192,6 +228,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
     final ordering = context.watch<OrderingWindowProvider>();
     final firstName =
         user is StudentUser ? user.name.split(' ').first : 'Student';
+    final greeting = _greetingText.replaceAll('[Name]', firstName);
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -199,7 +236,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            '${timeGreeting()}, $firstName',
+            greeting,
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
           ),
           const Text('What would you like to order today?',
@@ -253,61 +290,101 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
             ),
           ),
           const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: PopupMenuButton<String>(
-              tooltip: 'Filter menu',
-              onSelected: _toggleFilter,
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'veg',
-                  child: Row(
+          Row(
+            children: [
+              PopupMenuButton<String>(
+                tooltip: 'Filter menu',
+                onSelected: _onFilterSelected,
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'highlyOrdered',
+                    child: Row(
+                      children: [
+                        const Expanded(child: Text('Highly Ordered')),
+                        if (_highlyOrdered) const Icon(Icons.check, size: 18),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'newlyAdded',
+                    child: Row(
+                      children: [
+                        const Expanded(child: Text('Newly Added')),
+                        if (_newlyOrdered) const Icon(Icons.check, size: 18),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'priceLowToHigh',
+                    child: Row(
+                      children: [
+                        const Expanded(child: Text('Price: Low to High')),
+                        if (_priceSort == 'priceLowToHigh')
+                          const Icon(Icons.check, size: 18),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'priceHighToLow',
+                    child: Row(
+                      children: [
+                        const Expanded(child: Text('Price: High to Low')),
+                        if (_priceSort == 'priceHighToLow')
+                          const Icon(Icons.check, size: 18),
+                      ],
+                    ),
+                  ),
+                ],
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.bgSubtle,
+                    border: Border.fromBorderSide(
+                      BorderSide(color: AppTheme.border),
+                    ),
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Expanded(child: Text('Veg Only')),
-                      if (_vegOnly) const Icon(Icons.check, size: 18),
+                      Text('Filter',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      SizedBox(width: 6),
+                      Icon(Icons.keyboard_arrow_down, size: 18),
                     ],
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'nonVeg',
-                  child: Row(
-                    children: [
-                      const Expanded(child: Text('Non-Veg Only')),
-                      if (_nonVegOnly) const Icon(Icons.check, size: 18),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'highlyOrdered',
-                  child: Row(
-                    children: [
-                      const Expanded(child: Text('Highly Ordered')),
-                      if (_highlyOrdered) const Icon(Icons.check, size: 18),
-                    ],
-                  ),
-                ),
-              ],
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: const BoxDecoration(
-                  color: AppTheme.bgSubtle,
-                  border: Border.fromBorderSide(
-                    BorderSide(color: AppTheme.border),
-                  ),
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Filter',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
-                    SizedBox(width: 6),
-                    Icon(Icons.tune, size: 18),
-                  ],
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Pure Veg',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: 8),
+                  Switch.adaptive(
+                    value: _pureVeg,
+                    activeThumbColor: Colors.green,
+                    activeTrackColor: Colors.green.shade200,
+                    onChanged: (value) => setState(() => _pureVeg = value),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                avatar: _availableOnly ? const Icon(Icons.check, size: 16) : null,
+                label: const Text('Available'),
+                selected: _availableOnly,
+                selectedColor: AppTheme.primaryMuted,
+                checkmarkColor: AppTheme.primary,
+                showCheckmark: false,
+                onSelected: (_) =>
+                    setState(() => _availableOnly = !_availableOnly),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           const Text("Today's Menu",
@@ -327,8 +404,16 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
               child: Text('No menu items found.', textAlign: TextAlign.center),
             )
           else
-            ..._filtered.map(
-              (item) => FoodCard(item: item, orderingOpen: ordering.isOpen),
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.8,
+              children: _filtered
+                  .map((item) => FoodCard(item: item, orderingOpen: ordering.isOpen))
+                  .toList(),
             ),
         ],
       ),
