@@ -423,9 +423,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.68,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 0.82,
               ),
               itemCount: _filtered.length,
               itemBuilder: (context, index) {
