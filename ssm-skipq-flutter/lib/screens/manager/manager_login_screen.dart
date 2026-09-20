@@ -18,6 +18,7 @@ class _ManagerLoginScreenState extends State<ManagerLoginScreen> {
   final _idController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _submitting = false;
+  bool _showPassword = false;
   String? _error;
 
   @override
@@ -40,7 +41,8 @@ class _ManagerLoginScreenState extends State<ManagerLoginScreen> {
       );
       if (mounted) context.go('/manager');
     } catch (e) {
-      setState(() => _error = auth.messageFromError(e, fallback: 'Invalid Manager ID or password.'));
+      setState(() => _error = auth.messageFromError(e,
+          fallback: 'Invalid Manager ID or password.'));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -66,7 +68,8 @@ class _ManagerLoginScreenState extends State<ManagerLoginScreen> {
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text('Student? ', style: GoogleFonts.inter(color: AppTheme.textSecondary)),
+            Text('Student? ',
+                style: GoogleFonts.inter(color: AppTheme.textSecondary)),
             TextButton(
               onPressed: () => context.go('/'),
               style: TextButton.styleFrom(
@@ -82,7 +85,9 @@ class _ManagerLoginScreenState extends State<ManagerLoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Manager ID', style: displayFont.copyWith(fontSize: 14, fontWeight: FontWeight.w500)),
+            Text('Manager ID',
+                style: displayFont.copyWith(
+                    fontSize: 14, fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
             TextField(
               controller: _idController,
@@ -90,12 +95,23 @@ class _ManagerLoginScreenState extends State<ManagerLoginScreen> {
               textCapitalization: TextCapitalization.characters,
             ),
             const SizedBox(height: 16),
-            Text('Password', style: displayFont.copyWith(fontSize: 14, fontWeight: FontWeight.w500)),
+            Text('Password',
+                style: displayFont.copyWith(
+                    fontSize: 14, fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
             TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(hintText: 'Your password'),
-              obscureText: true,
+              decoration: InputDecoration(
+                hintText: 'Your password',
+                suffixIcon: IconButton(
+                  tooltip: _showPassword ? 'Hide password' : 'Show password',
+                  icon: Icon(
+                      _showPassword ? Icons.visibility_off : Icons.visibility),
+                  onPressed: () =>
+                      setState(() => _showPassword = !_showPassword),
+                ),
+              ),
+              obscureText: !_showPassword,
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),

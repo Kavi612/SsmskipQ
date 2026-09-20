@@ -116,7 +116,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
             feedback.length;
     final completedOrders =
         orders.where((order) => order.status == OrderStatus.pickedUp).toList();
-    final revenue = completedOrders.fold<num>(0, (sum, order) => sum + order.total);
+    final revenue =
+        completedOrders.fold<num>(0, (sum, order) => sum + order.total);
     final cancelledOrders =
         orders.where((order) => order.status == OrderStatus.cancelled).length;
 
@@ -152,15 +153,16 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
               childAspectRatio: 1.18,
               children: [
                 _summaryCard('Order Analytics', '${orders.length}',
-                  Icons.receipt_long_outlined, 'Order Analytics'),
-                _summaryCard('Feedback Analytics',
-                  '${average.toStringAsFixed(1)} / 5', Icons.star_outline,
-                  'Feedback Analytics'),
+                    Icons.receipt_long_outlined, 'Order Analytics'),
                 _summaryCard(
-                  'Revenue Analytics', '₹$revenue', Icons.payments_outlined,
-                  'Revenue Analytics'),
+                    'Feedback Analytics',
+                    '${average.toStringAsFixed(1)} / 5',
+                    Icons.star_outline,
+                    'Feedback Analytics'),
+                _summaryCard('Revenue Analytics', '₹$revenue',
+                    Icons.payments_outlined, 'Revenue Analytics'),
                 _summaryCard('Cancellation Analytics', '$cancelledOrders',
-                  Icons.cancel_outlined, 'Cancellation Analytics'),
+                    Icons.cancel_outlined, 'Cancellation Analytics'),
               ],
             ),
             const SizedBox(height: 22),
@@ -370,7 +372,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
             child: Icon(Icons.person_outline, color: AppTheme.primary)),
         title: Text(manager.name,
             style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text('${manager.managerId}  •  ${visible ? (manager.passwordPlain ?? 'Password unavailable') : manager.passwordMasked}'),
+        subtitle: Text(
+            '${manager.managerId}  •  ${visible ? (manager.passwordPlain ?? 'Password unavailable') : manager.passwordMasked}'),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -415,7 +418,9 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                   await widget.superAdminService.deleteManager(manager.id);
                   if (!mounted) return;
                   setState(() {
-                    _managers = _managers.where((item) => item.id != manager.id).toList();
+                    _managers = _managers
+                        .where((item) => item.id != manager.id)
+                        .toList();
                     _visibleManagerPasswords.remove(manager.id);
                   });
                   if (dialogContext.mounted) Navigator.pop(dialogContext);
@@ -425,7 +430,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                 } catch (_) {
                   if (dialogContext.mounted) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(content: Text('Unable to remove manager.')),
+                      const SnackBar(
+                          content: Text('Unable to remove manager.')),
                     );
                   }
                 }
@@ -468,6 +474,7 @@ class _CreateManagerDialogState extends State<_CreateManagerDialog> {
   final _passwordController = TextEditingController();
   String? _error;
   bool _submitting = false;
+  bool _showPassword = false;
 
   @override
   void dispose() {
@@ -522,8 +529,16 @@ class _CreateManagerDialogState extends State<_CreateManagerDialog> {
           ),
           TextField(
             controller: _passwordController,
-            obscureText: true,
-            decoration: const InputDecoration(labelText: 'Password'),
+            obscureText: !_showPassword,
+            decoration: InputDecoration(
+              labelText: 'Password',
+              suffixIcon: IconButton(
+                tooltip: _showPassword ? 'Hide password' : 'Show password',
+                icon: Icon(
+                    _showPassword ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => _showPassword = !_showPassword),
+              ),
+            ),
           ),
           if (_error != null)
             Text(_error!, style: const TextStyle(color: AppTheme.error)),

@@ -29,6 +29,7 @@ class SuperAdminLoginScreen extends StatefulWidget {
 class _SuperAdminLoginScreenState extends State<SuperAdminLoginScreen> {
   final _idController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _showPassword = false;
   String? _error;
 
   @override
@@ -104,9 +105,20 @@ class _SuperAdminLoginScreenState extends State<SuperAdminLoginScreen> {
                   const SizedBox(height: 14),
                   TextField(
                     controller: _passwordController,
-                    obscureText: true,
+                    obscureText: !_showPassword,
                     onSubmitted: (_) => _login(),
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      suffixIcon: IconButton(
+                        tooltip:
+                            _showPassword ? 'Hide password' : 'Show password',
+                        icon: Icon(_showPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility),
+                        onPressed: () =>
+                            setState(() => _showPassword = !_showPassword),
+                      ),
+                    ),
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 12),
