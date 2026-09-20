@@ -41,25 +41,27 @@ class FoodCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: constraints.maxWidth,
-                height: imageSize,
-                child: Stack(
-                  children: [
-                    AspectRatio(
-                      aspectRatio: 1,
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(18),
-                        ),
-                        child: MenuItemImage(
-                          item: item,
-                          width: double.infinity,
-                          height: double.infinity,
-                          borderRadius: 0,
+              Padding(
+                padding: const EdgeInsets.all(6),
+                child: SizedBox(
+                  width: constraints.maxWidth - 12,
+                  height: imageSize - 12,
+                  child: Stack(
+                    children: [
+                      AspectRatio(
+                        aspectRatio: 1,
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(18),
+                          ),
+                          child: MenuItemImage(
+                            item: item,
+                            width: double.infinity,
+                            height: double.infinity,
+                            borderRadius: 0,
+                          ),
                         ),
                       ),
-                    ),
                     if (isNewlyAdded || isHighlyOrdered)
                       Positioned(
                         top: 8,
@@ -114,11 +116,12 @@ class FoodCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
