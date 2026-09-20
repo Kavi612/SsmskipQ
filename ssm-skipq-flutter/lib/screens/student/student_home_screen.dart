@@ -146,6 +146,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
           _priceSort =
               _priceSort == 'priceHighToLow' ? null : 'priceHighToLow';
           break;
+        case 'availableOnly':
+          _availableOnly = !_availableOnly;
+          break;
       }
     });
   }
@@ -334,6 +337,15 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
                       ],
                     ),
                   ),
+                  PopupMenuItem(
+                    value: 'availableOnly',
+                    child: Row(
+                      children: [
+                        const Expanded(child: Text('Currently Available')),
+                        if (_availableOnly) const Icon(Icons.check, size: 18),
+                      ],
+                    ),
+                  ),
                 ],
                 child: Container(
                   padding:
@@ -357,33 +369,38 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
                 ),
               ),
               const SizedBox(width: 8),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.eco_rounded,
-                    size: 18,
-                    color: _pureVeg ? Colors.green : Colors.grey.shade600,
+              GestureDetector(
+                onTap: () => setState(() => _pureVeg = !_pureVeg),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 46,
+                  height: 28,
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    color: _pureVeg ? Colors.green : Colors.grey.shade400,
                   ),
-                  const SizedBox(width: 8),
-                  Switch.adaptive(
-                    value: _pureVeg,
-                    activeThumbColor: Colors.green,
-                    activeTrackColor: Colors.green.shade200,
-                    onChanged: (value) => setState(() => _pureVeg = value),
+                  child: Align(
+                    alignment:
+                        _pureVeg ? Alignment.centerRight : Alignment.centerLeft,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.eco_rounded,
+                          size: 12,
+                          color: _pureVeg ? Colors.green : Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              const SizedBox(width: 8),
-              FilterChip(
-                avatar: _availableOnly ? const Icon(Icons.check, size: 16) : null,
-                label: const Text('Available'),
-                selected: _availableOnly,
-                selectedColor: AppTheme.primaryMuted,
-                checkmarkColor: AppTheme.primary,
-                showCheckmark: false,
-                onSelected: (_) =>
-                    setState(() => _availableOnly = !_availableOnly),
+                ),
               ),
             ],
           ),
@@ -411,7 +428,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
               crossAxisCount: 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 0.8,
+              childAspectRatio: 0.72,
               children: _filtered
                   .map((item) => FoodCard(item: item, orderingOpen: ordering.isOpen))
                   .toList(),

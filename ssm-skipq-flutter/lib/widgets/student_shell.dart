@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-
-import '../providers/cart_provider.dart';
 import '../providers/ordering_window_provider.dart';
 import '../services/menu_service.dart';
 import '../services/orders_service.dart';
@@ -55,7 +52,6 @@ class _StudentShellState extends State<StudentShell> {
 
   @override
   Widget build(BuildContext context) {
-    final cart = context.watch<CartProvider>();
     final tabs = [
       StudentHomeScreen(
         menuService: widget.menuService,
@@ -74,40 +70,9 @@ class _StudentShellState extends State<StudentShell> {
       appBar: AppBar(
         title: const Text('SkipQ · Pre-Order · Pick Up'),
         centerTitle: true,
-        actions: [
-          IconButton(
-            tooltip: 'Cart',
-            onPressed: () => context.push('/student/cart'),
-            icon: _CartNavigationIcon(
-              itemCount: cart.totalItems,
-              selected: false,
-            ),
-          ),
-        ],
       ),
       body: IndexedStack(index: _index, children: tabs),
       bottomNavigationBar: StudentBottomNavigationBar(selectedIndex: _index),
-    );
-  }
-}
-
-class _CartNavigationIcon extends StatelessWidget {
-  const _CartNavigationIcon({
-    required this.itemCount,
-    required this.selected,
-  });
-
-  final int itemCount;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Badge(
-      isLabelVisible: itemCount > 0,
-      label: Text(itemCount > 99 ? '99+' : '$itemCount'),
-      child: Icon(
-        selected ? Icons.shopping_cart : Icons.shopping_cart_outlined,
-      ),
     );
   }
 }
