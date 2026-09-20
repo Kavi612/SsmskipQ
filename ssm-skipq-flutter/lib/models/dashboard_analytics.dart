@@ -52,8 +52,8 @@ class DashboardAnalytics {
     var completedOrders = 0;
 
     for (final order in orders) {
-      totalRevenue += order.total;
       if (order.status == OrderStatus.pickedUp) {
+        totalRevenue += order.total;
         completedOrders++;
       }
 

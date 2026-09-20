@@ -426,8 +426,8 @@ export const getOrderAnalytics = async (req, res) => {
     const itemMap = new Map();
 
     for (const order of orders) {
-      totalRevenue += Number(order.total || 0);
       if (order.status === 'PICKED_UP') {
+        totalRevenue += Number(order.total || 0);
         completedOrders += 1;
       }
 

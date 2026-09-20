@@ -114,7 +114,9 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
         ? 0.0
         : feedback.fold<int>(0, (sum, item) => sum + item.rating) /
             feedback.length;
-    final revenue = orders.fold<num>(0, (sum, order) => sum + order.total);
+    final completedOrders =
+        orders.where((order) => order.status == OrderStatus.pickedUp).toList();
+    final revenue = completedOrders.fold<num>(0, (sum, order) => sum + order.total);
     final cancelledOrders =
         orders.where((order) => order.status == OrderStatus.cancelled).length;
 
