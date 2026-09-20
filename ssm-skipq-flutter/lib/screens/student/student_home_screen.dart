@@ -414,7 +414,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
               crossAxisCount: 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 0.76,
+              childAspectRatio: 0.68,
               children: _filtered
                   .map((item) =>
                       FoodCard(item: item, orderingOpen: ordering.isOpen))

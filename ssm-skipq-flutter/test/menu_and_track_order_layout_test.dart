@@ -89,6 +89,48 @@ void main() {
     expect(find.text('ADD'), findsOneWidget);
   });
 
+  testWidgets('Current grid ratio stays within the card height',
+      (tester) async {
+    final item = MenuItem(
+      id: 'menu-2',
+      name: 'Another really long menu item name that should ellipsize',
+      description: 'Tasty item',
+      price: 199,
+      categoryId: 'main',
+      categoryName: 'Main',
+      imageUrl: 'https://example.com/item.jpg',
+      isVeg: true,
+      available: true,
+      createdAt: DateTime.now(),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider(
+        create: (_) => CartProvider(),
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: MediaQuery(
+            data: const MediaQueryData(size: Size(390, 844)),
+            child: Scaffold(
+              body: SizedBox(
+                height: 220,
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.68,
+                  children: [FoodCard(item: item, orderingOpen: true)],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Track order shows the feedback form once the order is picked up',
       (tester) async {
     final order = Order(
