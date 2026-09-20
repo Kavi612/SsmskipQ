@@ -290,14 +290,16 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppTheme.bgSubtle,
-                  border: Border.all(color: AppTheme.border),
-                  borderRadius: BorderRadius.circular(10),
+                  border: Border.fromBorderSide(
+                    BorderSide(color: AppTheme.border),
+                  ),
+                  borderRadius: BorderRadius.all(Radius.circular(10)),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Text('Filter',
                         style: TextStyle(fontWeight: FontWeight.w600)),
                     SizedBox(width: 6),
