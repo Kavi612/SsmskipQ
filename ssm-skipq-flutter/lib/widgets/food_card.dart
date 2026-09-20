@@ -31,19 +31,23 @@ class FoodCard extends StatelessWidget {
         side: const BorderSide(color: AppTheme.border),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Stack(
             children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(18),
-                ),
-                child: MenuItemImage(
-                  item: item,
-                  width: double.infinity,
-                  height: 138,
-                  borderRadius: 0,
+              AspectRatio(
+                aspectRatio: 1,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(18),
+                  ),
+                  child: MenuItemImage(
+                    item: item,
+                    width: double.infinity,
+                    height: double.infinity,
+                    borderRadius: 0,
+                  ),
                 ),
               ),
               if (isNewlyAdded)
@@ -51,11 +55,14 @@ class FoodCard extends StatelessWidget {
                   top: 8,
                   right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: AppTheme.primary.withValues(alpha: 0.25)),
+                      border: Border.all(
+                        color: AppTheme.primary.withValues(alpha: 0.25),
+                      ),
                     ),
                     child: const Text(
                       'Newly added',
@@ -70,29 +77,30 @@ class FoodCard extends StatelessWidget {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+            padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     VegStatusBadge(isVeg: item.isVeg),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         item.name,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                          fontSize: 13,
                         ),
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -101,7 +109,7 @@ class FoodCard extends StatelessWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         color: AppTheme.primary,
-                        fontSize: 16,
+                        fontSize: 15,
                       ),
                     ),
                     const Spacer(),
@@ -113,7 +121,8 @@ class FoodCard extends StatelessWidget {
                     else if (!orderingOpen)
                       const Text(
                         'Closed',
-                        style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                        style:
+                            TextStyle(color: AppTheme.textMuted, fontSize: 12),
                       )
                     else if (qty == 0)
                       FilledButton(
@@ -126,8 +135,8 @@ class FoodCard extends StatelessWidget {
                           available: item.available,
                         ),
                         style: FilledButton.styleFrom(
-                          minimumSize: const Size(62, 34),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          minimumSize: const Size(58, 30),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999),
                           ),
@@ -143,10 +152,10 @@ class FoodCard extends StatelessWidget {
                             constraints: const BoxConstraints(),
                             padding: EdgeInsets.zero,
                           ),
-                          Text('$qty',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              )),
+                          Text(
+                            '$qty',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
                           IconButton(
                             onPressed: () => cart.increment(item.id),
                             icon: const Icon(Icons.add_circle_outline),

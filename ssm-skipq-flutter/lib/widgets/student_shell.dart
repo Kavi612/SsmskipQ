@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/ordering_window_provider.dart';
 import '../services/menu_service.dart';
 import '../services/orders_service.dart';
+import '../services/payment_service.dart';
 import '../services/socket_service.dart';
 import '../services/feedback_service.dart';
 import '../screens/student/student_cart_screen.dart';
@@ -18,6 +19,7 @@ class StudentShell extends StatefulWidget {
     required this.ordersService,
     required this.socketService,
     required this.feedbackService,
+    required this.paymentService,
     this.initialTab = 0,
   });
 
@@ -25,6 +27,7 @@ class StudentShell extends StatefulWidget {
   final OrdersService ordersService;
   final SocketService socketService;
   final FeedbackService feedbackService;
+  final PaymentService paymentService;
   final int initialTab;
 
   @override
@@ -58,10 +61,15 @@ class _StudentShellState extends State<StudentShell> {
         ordersService: widget.ordersService,
         refreshToken: _homeRefreshToken,
       ),
-      const StudentCartScreen(),
+      StudentCartScreen(
+        menuService: widget.menuService,
+        ordersService: widget.ordersService,
+        paymentService: widget.paymentService,
+      ),
       StudentTrackOrderListScreen(
         ordersService: widget.ordersService,
         socketService: widget.socketService,
+        feedbackService: widget.feedbackService,
       ),
       const StudentProfileScreen(),
     ];

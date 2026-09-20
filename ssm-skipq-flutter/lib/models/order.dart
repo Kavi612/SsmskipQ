@@ -27,7 +27,8 @@ extension OrderStatusExtensions on OrderStatus {
 }
 
 Order? getCurrentActiveOrderForStudent(List<Order> orders, {String? orderId}) {
-  final activeOrders = orders.where((order) => order.status.isActiveOrderStatus);
+  final activeOrders =
+      orders.where((order) => order.status.isActiveOrderStatus);
   if (orderId != null) {
     final match = activeOrders.where((order) => order.id == orderId).toList();
     if (match.isNotEmpty) {
@@ -101,6 +102,7 @@ extension OrderStatusX on OrderStatus {
       case 'READY':
         return OrderStatus.ready;
       case 'PICKED_UP':
+      case 'COMPLETED':
         return OrderStatus.pickedUp;
       case 'CANCELLED':
         return OrderStatus.cancelled;
@@ -255,10 +257,10 @@ class Order {
       student: json['student'] != null
           ? OrderStudent.fromJson(json['student'] as Map<String, dynamic>)
           : null,
-          cancelledBy: json['cancelledBy'] as String?,
-          cancelledAt: DateTime.tryParse(json['cancelledAt'] as String? ?? ''),
+      cancelledBy: json['cancelledBy'] as String?,
+      cancelledAt: DateTime.tryParse(json['cancelledAt'] as String? ?? ''),
       hasFeedback: json['hasFeedback'] as bool? ?? false,
-        feedback: json['feedback'] != null
+      feedback: json['feedback'] != null
           ? SubmittedFeedback.fromJson(json['feedback'] as Map<String, dynamic>)
           : null,
     );

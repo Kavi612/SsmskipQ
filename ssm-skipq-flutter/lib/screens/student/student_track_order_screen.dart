@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
 import '../../models/order.dart';
+import '../../services/feedback_service.dart';
 import '../../services/orders_service.dart';
 import '../../services/socket_service.dart';
 import '../../widgets/app_scaffold.dart';
+import '../../widgets/order_feedback_form.dart';
 import '../../widgets/order_status_timeline.dart';
 import '../../widgets/student_bottom_navigation_bar.dart';
 
@@ -15,6 +17,7 @@ class StudentTrackOrderScreen extends StatefulWidget {
     this.initialOrder,
     required this.ordersService,
     required this.socketService,
+    required this.feedbackService,
     this.showBottomNavigation = false,
   });
 
@@ -22,10 +25,12 @@ class StudentTrackOrderScreen extends StatefulWidget {
   final Order? initialOrder;
   final OrdersService ordersService;
   final SocketService socketService;
+  final FeedbackService feedbackService;
   final bool showBottomNavigation;
 
   @override
-  State<StudentTrackOrderScreen> createState() => _StudentTrackOrderScreenState();
+  State<StudentTrackOrderScreen> createState() =>
+      _StudentTrackOrderScreenState();
 }
 
 class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
@@ -33,6 +38,7 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
   bool _loading = true;
   bool _cancelling = false;
   String? _error;
+  final Set<String> _submittedFeedback = {};
 
   @override
   void initState() {
@@ -63,18 +69,19 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
   Future<void> _refresh() async {
     try {
       final orders = await widget.ordersService.fetchMyOrders();
-      final matches = orders.where((order) => order.id == widget.orderId).toList();
-      final latest = matches.isEmpty ? null : matches.first;
+      final matches =
+          orders.where((order) => order.id == widget.orderId).toList();
+      final latest = matches.isEmpty ? widget.initialOrder : matches.first;
       if (!mounted) return;
       setState(() {
-        _order = latest;
+        _order = latest ?? _order;
         _loading = false;
         _error = null;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _order = null;
+        _order = widget.initialOrder ?? _order;
         _loading = false;
         _error = 'Unable to load order details.';
       });
@@ -113,7 +120,8 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
               onPressed: () async {
                 setDialogState(() => _cancelling = true);
                 try {
-                  final updated = await widget.ordersService.cancelOrder(widget.orderId);
+                  final updated =
+                      await widget.ordersService.cancelOrder(widget.orderId);
                   if (!mounted) return;
                   setState(() {
                     _order = updated;
@@ -127,13 +135,18 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
                   if (dialogContext.mounted) {
                     setDialogState(() => _cancelling = false);
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(content: Text('Unable to cancel order. It may already be accepted.')),
+                      const SnackBar(
+                          content: Text(
+                              'Unable to cancel order. It may already be accepted.')),
                     );
                   }
                 }
               },
               child: _cancelling
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text('Cancel Order'),
             ),
           ],
@@ -141,6 +154,11 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
       ),
     );
   }
+
+  bool _shouldShowFeedback(Order order) =>
+      order.status == OrderStatus.pickedUp &&
+      !order.hasFeedback &&
+      !_submittedFeedback.contains(order.id);
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +183,8 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.receipt_long_outlined, size: 56, color: AppTheme.textMuted),
+              const Icon(Icons.receipt_long_outlined,
+                  size: 56, color: AppTheme.textMuted),
               const SizedBox(height: 16),
               const Text(
                 'No order in progress right now',
@@ -179,7 +198,8 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
               ),
               const SizedBox(height: 20),
               OutlinedButton(
-                onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil('/student', (route) => false),
+                onPressed: () => Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/student', (route) => false),
                 child: const Text('BROWSE MENU'),
               ),
             ],
@@ -202,7 +222,8 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: const [
-                Icon(Icons.receipt_long_outlined, size: 56, color: AppTheme.textMuted),
+                Icon(Icons.receipt_long_outlined,
+                    size: 56, color: AppTheme.textMuted),
                 SizedBox(height: 16),
                 Text(
                   'No order in progress right now',
@@ -230,7 +251,7 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
       title: 'Track Order',
       showBack: true,
       backTo: '/student',
-        bottomNavigationBar: widget.showBottomNavigation
+      bottomNavigationBar: widget.showBottomNavigation
           ? const StudentBottomNavigationBar(selectedIndex: 2)
           : null,
       body: RefreshIndicator(
@@ -250,27 +271,29 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
-                children: [
-                  const Text('Your Token Number', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-                  Text(
-                    order.tokenNumber,
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.primary,
+                  children: [
+                    const Text('Your Token Number',
+                        style: TextStyle(
+                            color: AppTheme.textSecondary, fontSize: 12)),
+                    Text(
+                      order.tokenNumber,
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.primary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _getStatusMessage(order.status),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 14,
+                    const SizedBox(height: 12),
+                    Text(
+                      _getStatusMessage(order.status),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               ),
             ),
             if (order.status == OrderStatus.pending) ...[
@@ -296,13 +319,44 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Order Status', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    const Text('Order Status',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 16)),
                     const SizedBox(height: 16),
                     OrderStatusTimeline(status: order.status),
                   ],
                 ),
               ),
             ),
+            if (_shouldShowFeedback(order)) ...[
+              const SizedBox(height: 16),
+              OrderFeedbackForm(
+                orderId: order.id,
+                tokenNumber: order.tokenNumber,
+                feedbackService: widget.feedbackService,
+                onSubmitted: (feedback) {
+                  setState(() {
+                    _submittedFeedback.add(order.id);
+                    _order = order.copyWith(
+                      hasFeedback: true,
+                      feedback: SubmittedFeedback(
+                        rating: feedback.rating,
+                        review: feedback.review,
+                      ),
+                    );
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Feedback submitted')),
+                  );
+                },
+              ),
+            ] else if (order.status == OrderStatus.pickedUp &&
+                (order.hasFeedback ||
+                    order.feedback != null ||
+                    _submittedFeedback.contains(order.id))) ...[
+              const SizedBox(height: 16),
+              _FeedbackConfirmation(feedback: order.feedback),
+            ],
             const SizedBox(height: 16),
             Card(
               margin: EdgeInsets.zero,
@@ -318,20 +372,28 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Order Details', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    const Text('Order Details',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 16)),
                     const SizedBox(height: 12),
                     ...order.items.map(
                       (item) => ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: Text('${item.name} × ${item.quantity}', style: const TextStyle(fontSize: 14)),
-                        trailing: Text('₹${item.price * item.quantity}', style: const TextStyle(fontSize: 14)),
+                        title: Text('${item.name} × ${item.quantity}',
+                            style: const TextStyle(fontSize: 14)),
+                        trailing: Text('₹${item.price * item.quantity}',
+                            style: const TextStyle(fontSize: 14)),
                       ),
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Total', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                        Text('₹${order.total}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                        const Text('Total',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 14)),
+                        Text('₹${order.total}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 14)),
                       ],
                     ),
                   ],
@@ -341,6 +403,49 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
             const SizedBox(height: 16),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _FeedbackConfirmation extends StatelessWidget {
+  const _FeedbackConfirmation({required this.feedback});
+
+  final SubmittedFeedback? feedback;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.bgSubtle,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Thanks for your feedback!',
+              style: TextStyle(fontWeight: FontWeight.w700)),
+          if (feedback != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: List.generate(
+                5,
+                (index) => Icon(
+                  index < feedback!.rating ? Icons.star : Icons.star_border,
+                  color: AppTheme.primary,
+                  size: 18,
+                ),
+              ),
+            ),
+            if (feedback!.review.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(feedback!.review),
+            ],
+          ],
+        ],
       ),
     );
   }

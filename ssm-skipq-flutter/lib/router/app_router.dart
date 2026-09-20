@@ -64,6 +64,7 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
           ordersService: services.ordersService,
           socketService: services.socketService,
           feedbackService: services.feedbackService,
+          paymentService: services.paymentService,
           initialTab: studentTabFromQuery(state.uri.queryParameters['tab']),
         ),
       ),
@@ -72,6 +73,7 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
         builder: (_, __) => StudentCartScreen(
           menuService: services.menuService,
           ordersService: services.ordersService,
+          paymentService: services.paymentService,
         ),
       ),
       GoRoute(
@@ -104,6 +106,7 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
             initialOrder: order,
             ordersService: services.ordersService,
             socketService: services.socketService,
+            feedbackService: services.feedbackService,
             showBottomNavigation: true,
           );
         },

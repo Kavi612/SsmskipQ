@@ -96,6 +96,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -106,15 +107,19 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
         widget.menuService.fetchMenuItems(),
         widget.ordersService.fetchMyOrders(),
       ]);
+      if (!mounted) return;
       setState(() {
         _categories = results[0] as List<Category>;
         _items = results[1] as List<MenuItem>;
         _orderHistory = results[2] as List<Order>;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() => _error = 'Unable to load menu. Please try again.');
     } finally {
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -139,12 +144,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
           _newlyOrdered = !_newlyOrdered;
           break;
         case 'priceLowToHigh':
-          _priceSort =
-              _priceSort == 'priceLowToHigh' ? null : 'priceLowToHigh';
+          _priceSort = _priceSort == 'priceLowToHigh' ? null : 'priceLowToHigh';
           break;
         case 'priceHighToLow':
-          _priceSort =
-              _priceSort == 'priceHighToLow' ? null : 'priceHighToLow';
+          _priceSort = _priceSort == 'priceHighToLow' ? null : 'priceHighToLow';
           break;
         case 'availableOnly':
           _availableOnly = !_availableOnly;
@@ -411,9 +414,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
               crossAxisCount: 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 0.72,
+              childAspectRatio: 0.76,
               children: _filtered
-                  .map((item) => FoodCard(item: item, orderingOpen: ordering.isOpen))
+                  .map((item) =>
+                      FoodCard(item: item, orderingOpen: ordering.isOpen))
                   .toList(),
             ),
         ],
