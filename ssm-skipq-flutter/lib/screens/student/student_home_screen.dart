@@ -134,6 +134,16 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
     return counts;
   }
 
+  Set<String> get _topHighlyOrderedIds {
+    final counts = _historicalOrderCounts;
+    if (counts.isEmpty) return const {};
+
+    final ranked = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return ranked.take(5).map((entry) => entry.key).toSet();
+  }
+
   void _onFilterSelected(String value) {
     setState(() {
       switch (value) {
@@ -408,20 +418,29 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
               child: Text('No menu items found.', textAlign: TextAlign.center),
             )
           else
-            GridView.builder(
-              padding: const EdgeInsets.all(12),
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.88,
-              ),
-              itemCount: _filtered.length,
-              itemBuilder: (context, index) {
-                final item = _filtered[index];
-                return FoodCard(item: item, orderingOpen: ordering.isOpen);
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final cardWidth = (constraints.maxWidth - 12) / 2;
+                const targetHeight = 290.0;
+
+                final topHighlyOrderedIds = _topHighlyOrderedIds;
+
+                return GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: cardWidth / targetHeight,
+                  children: _filtered
+                      .map((item) => FoodCard(
+                            item: item,
+                            orderingOpen: ordering.isOpen,
+                            isHighlyOrdered:
+                                topHighlyOrderedIds.contains(item.id),
+                          ))
+                      .toList(),
+                );
               },
             ),
         ],

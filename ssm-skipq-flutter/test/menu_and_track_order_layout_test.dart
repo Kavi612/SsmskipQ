@@ -53,6 +53,46 @@ class FakeFeedbackService extends FeedbackService {
 }
 
 void main() {
+  testWidgets('FoodCard shows Highly Ordered badge without changing layout',
+      (tester) async {
+    final item = MenuItem(
+      id: 'menu-1',
+      name: 'Samosa',
+      description: 'Tasty item',
+      price: 199,
+      categoryId: 'main',
+      categoryName: 'Main',
+      imageUrl: 'https://example.com/item.jpg',
+      isVeg: true,
+      available: true,
+      createdAt: DateTime.now(),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider(
+        create: (_) => CartProvider(),
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: Center(
+            child: SizedBox(
+              width: 170,
+              child: FoodCard(
+                item: item,
+                orderingOpen: true,
+                isHighlyOrdered: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Highly Ordered'), findsOneWidget);
+    expect(find.text('ADD'), findsOneWidget);
+    expect(find.text('Samosa'), findsOneWidget);
+    expect(find.text('₹199'), findsOneWidget);
+  });
+
   testWidgets(
       'FoodCard keeps the image in a square aspect ratio and name text compact',
       (tester) async {
