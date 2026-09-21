@@ -120,6 +120,53 @@ void main() {
     expect(find.text('₹199'), findsOneWidget);
   });
 
+  testWidgets('FoodCard quantity stepper stays synchronized with the cart',
+      (tester) async {
+    final item = MenuItem(
+      id: 'menu-stepper',
+      name: 'Samosa',
+      description: 'Tasty item',
+      price: 199,
+      categoryId: 'main',
+      categoryName: 'Main',
+      imageUrl: 'https://example.com/item.jpg',
+      isVeg: true,
+      available: true,
+      createdAt: DateTime.now(),
+    );
+    final cart = CartProvider();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: cart,
+        child: MaterialApp(
+          home: Center(
+            child: SizedBox(
+              width: 170,
+              child: FoodCard(item: item, orderingOpen: true),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('ADD'));
+    await tester.pump();
+    expect(find.text('1'), findsOneWidget);
+    expect(cart.getQuantity(item.id), 1);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
+    expect(find.text('2'), findsOneWidget);
+    expect(cart.getQuantity(item.id), 2);
+
+    await tester.tap(find.byIcon(Icons.remove));
+    await tester.tap(find.byIcon(Icons.remove));
+    await tester.pump();
+    expect(find.text('ADD'), findsOneWidget);
+    expect(cart.getQuantity(item.id), 0);
+  });
+
   testWidgets(
       'FoodCard keeps the image in a square aspect ratio and name text compact',
       (tester) async {

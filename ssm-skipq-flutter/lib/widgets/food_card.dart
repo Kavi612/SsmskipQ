@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../config/theme.dart';
 import '../models/menu.dart';
 import '../providers/cart_provider.dart';
 import 'veg_status_badge.dart';
@@ -21,6 +20,7 @@ class FoodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
+    final quantity = cart.getQuantity(item.id);
     final vegBadge = VegStatusBadge(isVeg: item.isVeg);
 
     return SizedBox(
@@ -122,38 +122,86 @@ class FoodCard extends StatelessWidget {
                     color: Color(0xFF111827),
                   ),
                 ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFE4101),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(0, 26),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 0,
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFE4101),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  onPressed: () => cart.addItem(
-                    menuItemId: item.id,
-                    name: item.name,
-                    price: item.price,
-                    imageUrl: item.imageUrl,
-                    isVeg: item.isVeg,
-                    available: item.available,
-                  ),
-                  child: const Text(
-                    'ADD',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: quantity == 0
+                        ? GestureDetector(
+                          onTap: () => cart.addItem(
+                            menuItemId: item.id,
+                            name: item.name,
+                            price: item.price,
+                            imageUrl: item.imageUrl,
+                            isVeg: item.isVeg,
+                            available: item.available,
+                            categoryId: item.categoryId,
+                            categoryName: item.categoryName,
+                          ),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            child: Text(
+                              'ADD',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _QuantityButton(
+                              icon: Icons.remove,
+                              onTap: () => cart.decrement(item.id),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 3),
+                              child: Text(
+                                '$quantity',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            _QuantityButton(
+                              icon: Icons.add,
+                              onTap: () => cart.increment(item.id),
+                            ),
+                          ],
+                        ),
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _QuantityButton extends StatelessWidget {
+  const _QuantityButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+        child: Icon(icon, size: 14, color: Colors.white),
       ),
     );
   }
