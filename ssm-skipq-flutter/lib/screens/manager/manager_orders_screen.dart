@@ -200,13 +200,13 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
-                            color: AppTheme.primary,
+                            color: AppTheme.primaryMuted,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             order.note.trim(),
                             style: const TextStyle(
-                              color: Colors.black,
+                              color: AppTheme.primary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),

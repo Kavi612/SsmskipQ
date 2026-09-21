@@ -105,7 +105,7 @@ class _StudentAuthFormState extends State<StudentAuthForm> {
       footer: TextButton(
         onPressed: widget.onManagerTap,
         style: TextButton.styleFrom(
-          foregroundColor: AppTheme.textMuted,
+          foregroundColor: AppTheme.primary,
           padding: EdgeInsets.zero,
         ),
         child: const Text('Canteen Staff Login'),

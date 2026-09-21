@@ -50,7 +50,7 @@ class _FoodCollageState extends State<FoodCollage>
   @override
   Widget build(BuildContext context) {
     final itemWidth =
-        (MediaQuery.sizeOf(context).width * 0.21).clamp(76.0, 104.0);
+        (MediaQuery.sizeOf(context).width * 0.22).clamp(82.0, 112.0);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
@@ -59,7 +59,7 @@ class _FoodCollageState extends State<FoodCollage>
         children: [
           for (var i = 0; i < _foods.length; i++)
             SizedBox(
-              width: i == 0 ? itemWidth : itemWidth * 0.72,
+              width: i == 0 ? itemWidth : itemWidth * 0.78,
               child: AnimatedBuilder(
                 animation: _controllers[i],
                 builder: (context, child) {
