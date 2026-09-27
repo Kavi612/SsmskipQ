@@ -24,8 +24,8 @@ class FoodCard extends StatelessWidget {
     final vegBadge = VegStatusBadge(isVeg: item.isVeg);
 
     return SizedBox(
-      width: 170,
-      height: 240,
+      width: 100,
+      height: 20,
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFFFCEEE6),
@@ -90,7 +90,7 @@ class FoodCard extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Row(
               children: [
                 vegBadge,
@@ -109,7 +109,7 @@ class FoodCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 2),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
