@@ -411,13 +411,29 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
                   }),
                 ),
               ),
-              FilterChip(
-                label: const Text('🍗 Non-veg'),
-                selected: _nonVegOnly,
-                onSelected: (selected) => setState(() {
-                  _nonVegOnly = selected;
-                  if (selected) _pureVeg = false;
-                }),
+              Semantics(
+                label: 'Non-veg only',
+                child: Switch.adaptive(
+                  value: _nonVegOnly,
+                  inactiveThumbColor: Colors.white,
+                  inactiveTrackColor: Colors.grey.shade400,
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: const Color(0xFF4E342E),
+                  thumbIcon: WidgetStateProperty.resolveWith((states) {
+                    final selected = states.contains(WidgetState.selected);
+                    return Icon(
+                      Icons.set_meal,
+                      size: 12,
+                      color: selected
+                          ? const Color(0xFF4E342E)
+                          : Colors.grey.shade600,
+                    );
+                  }),
+                  onChanged: (value) => setState(() {
+                    _nonVegOnly = value;
+                    if (value) _pureVeg = false;
+                  }),
+                ),
               ),
             ],
           ),
