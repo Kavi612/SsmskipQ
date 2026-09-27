@@ -57,6 +57,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
   String? _selectedCategoryId;
   String _search = '';
   bool _pureVeg = false;
+  bool _nonVegOnly = false;
   bool _highlyOrdered = false;
   bool _newlyOrdered = false;
   String? _priceSort;
@@ -201,6 +202,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
       result = result.where((e) => e.isVeg).toList();
     }
 
+    if (_nonVegOnly) {
+      result = result.where((e) => !e.isVeg).toList();
+    }
+
     if (_availableOnly) {
       result = result.where((e) => e.available).toList();
     }
@@ -306,7 +311,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
             ),
           ),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               PopupMenuButton<String>(
                 tooltip: 'Filter menu',
@@ -381,22 +389,21 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Switch.adaptive(
-                value: _pureVeg,
-                inactiveThumbColor: Colors.white,
-                inactiveTrackColor: Colors.grey.shade400,
-                activeThumbColor: Colors.white,
-                activeTrackColor: Colors.green,
-                thumbIcon: WidgetStateProperty.resolveWith((states) {
-                  final selected = states.contains(WidgetState.selected);
-                  return Icon(
-                    Icons.eco_rounded,
-                    size: 12,
-                    color: selected ? Colors.green : Colors.grey.shade600,
-                  );
+              FilterChip(
+                label: const Text('🌱 Veg only'),
+                selected: _pureVeg,
+                onSelected: (selected) => setState(() {
+                  _pureVeg = selected;
+                  if (selected) _nonVegOnly = false;
                 }),
-                onChanged: (value) => setState(() => _pureVeg = value),
+              ),
+              FilterChip(
+                label: const Text('🍗 Non-veg'),
+                selected: _nonVegOnly,
+                onSelected: (selected) => setState(() {
+                  _nonVegOnly = selected;
+                  if (selected) _pureVeg = false;
+                }),
               ),
             ],
           ),
@@ -425,7 +432,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
                 crossAxisCount: 2,
                 crossAxisSpacing: 3,
                 mainAxisSpacing: 4,
-                childAspectRatio: 0.72,
+                mainAxisExtent: 198,
               ),
               itemCount: _filtered.length,
               itemBuilder: (context, index) {
