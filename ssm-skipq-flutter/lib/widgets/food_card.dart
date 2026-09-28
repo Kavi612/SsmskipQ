@@ -38,22 +38,25 @@ class FoodCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  height: 112,
-                  width: double.infinity,
-                  child: Image.network(
-                    item.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: const Color(0xFFF7E1D2),
-                        child: const Icon(
-                          Icons.image_not_supported_outlined,
-                          size: 36,
-                          color: Color(0xFFB86A3D),
-                        ),
-                      );
-                    },
+                child: Opacity(
+                  opacity: item.available ? 1 : 0.55,
+                  child: SizedBox(
+                    height: 112,
+                    width: double.infinity,
+                    child: Image.network(
+                      item.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: const Color(0xFFF7E1D2),
+                          child: const Icon(
+                            Icons.image_not_supported_outlined,
+                            size: 36,
+                            color: Color(0xFFB86A3D),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -119,60 +122,83 @@ class FoodCard extends StatelessWidget {
               ),
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFE4101),
+                  color: item.available
+                      ? const Color(0xFFFE4101)
+                      : Colors.grey.shade400,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: quantity == 0
-                    ? GestureDetector(
-                        onTap: () => cart.addItem(
-                          menuItemId: item.id,
-                          name: item.name,
-                          price: item.price,
-                          imageUrl: item.imageUrl,
-                          isVeg: item.isVeg,
-                          available: item.available,
-                          categoryId: item.categoryId,
-                          categoryName: item.categoryName,
-                        ),
+                child: !item.available
+                    ? Semantics(
+                        button: true,
+                        enabled: false,
+                        label: 'Sold Out',
                         child: const Padding(
                           padding: EdgeInsets.symmetric(
-                            horizontal: 12,
+                            horizontal: 6,
                             vertical: 7,
                           ),
                           child: Text(
-                            'ADD',
+                            'Sold Out',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
                       )
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _QuantityButton(
-                            icon: Icons.remove,
-                            onTap: () => cart.decrement(item.id),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 3),
-                            child: Text(
-                              '$quantity',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
+                    : quantity == 0
+                        ? GestureDetector(
+                            onTap: () => cart.addItem(
+                              menuItemId: item.id,
+                              name: item.name,
+                              price: item.price,
+                              imageUrl: item.imageUrl,
+                              isVeg: item.isVeg,
+                              available: item.available,
+                              categoryId: item.categoryId,
+                              categoryName: item.categoryName,
+                            ),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 7,
+                              ),
+                              child: Text(
+                                'ADD',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _QuantityButton(
+                                icon: Icons.remove,
+                                onTap: () => cart.decrement(item.id),
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 3),
+                                child: Text(
+                                  '$quantity',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              _QuantityButton(
+                                icon: Icons.add,
+                                onTap: () => cart.increment(item.id),
+                              ),
+                            ],
                           ),
-                          _QuantityButton(
-                            icon: Icons.add,
-                            onTap: () => cart.increment(item.id),
-                          ),
-                        ],
-                      ),
               ),
             ],
           ),

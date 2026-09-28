@@ -24,11 +24,13 @@ class StudentCartScreen extends StatefulWidget {
     required this.menuService,
     required this.ordersService,
     required this.paymentService,
+    this.refreshToken = 0,
   });
 
   final MenuService menuService;
   final OrdersService ordersService;
   final PaymentService paymentService;
+  final int refreshToken;
 
   @override
   State<StudentCartScreen> createState() => _StudentCartScreenState();
@@ -59,6 +61,8 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
   PaymentMethod _paymentMethod = PaymentMethod.razorpay;
   bool _loadingConfig = true;
   bool _processing = false;
+  bool _catalogLoading = true;
+  bool _catalogLoaded = false;
   String? _checkoutError;
   PaymentConfig? _paymentConfig;
 
@@ -71,14 +75,31 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
     _loadPaymentConfig();
   }
 
+  @override
+  void didUpdateWidget(covariant StudentCartScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshToken != widget.refreshToken) {
+      _loadCatalog();
+    }
+  }
+
   Future<void> _loadCatalog() async {
+    if (mounted) setState(() => _catalogLoading = true);
     try {
       final items = await widget.menuService.fetchMenuItems();
       if (!mounted) return;
-      setState(() => _catalog = items);
+      context.read<CartProvider>().updateAvailability({
+        for (final item in items) item.id: item.available,
+      });
+      setState(() {
+        _catalog = items;
+        _catalogLoaded = true;
+      });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _catalog = const []);
+      setState(() => _catalogLoaded = false);
+    } finally {
+      if (mounted) setState(() => _catalogLoading = false);
     }
   }
 
@@ -122,6 +143,21 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
     });
 
     try {
+      final latestItems = await widget.menuService.fetchMenuItems();
+      cart.updateAvailability({
+        for (final item in latestItems) item.id: item.available,
+      });
+      if (!mounted) return;
+      setState(() {
+        _catalog = latestItems;
+        _catalogLoaded = true;
+      });
+      if (cart.items.any((item) => !item.available)) {
+        setState(() => _checkoutError =
+            'Remove sold out items from your cart before placing the order.');
+        return;
+      }
+
       final result = await widget.ordersService.createOrder(
         items: cart.items
             .map(
@@ -294,6 +330,7 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
     final total = subtotal + taxes;
     final suggestions = _suggestions;
     final razorpayEnabled = _paymentConfig?.enabled ?? false;
+    final hasUnavailableItems = cart.items.any((item) => !item.available);
 
     return AppScaffold(
       title: 'Your Cart',
@@ -334,6 +371,17 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
                                   ),
                                 ),
                               ),
+                              if (!item.available) ...[
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Sold Out',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -365,9 +413,16 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
                                     ),
                                   ),
                                   InkWell(
-                                    onTap: () =>
-                                        cart.increment(item.menuItemId),
-                                    child: const Icon(Icons.add, size: 16),
+                                    onTap: item.available
+                                        ? () => cart.increment(item.menuItemId)
+                                        : null,
+                                    child: Icon(
+                                      Icons.add,
+                                      size: 16,
+                                      color: item.available
+                                          ? null
+                                          : Colors.grey.shade400,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -642,10 +697,27 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
                           ),
                         ],
                         const SizedBox(height: 12),
+                        if (hasUnavailableItems) ...[
+                          const Text(
+                            'Remove sold out items from your cart to continue.',
+                            style: TextStyle(color: AppTheme.error),
+                          ),
+                          const SizedBox(height: 8),
+                        ] else if (_catalogLoading || !_catalogLoaded) ...[
+                          Text(
+                            'Checking item availability...',
+                            style: TextStyle(color: Colors.grey.shade700),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: _processing || _loadingConfig
+                            onPressed: _processing ||
+                                    _loadingConfig ||
+                                    _catalogLoading ||
+                                    !_catalogLoaded ||
+                                    hasUnavailableItems
                                 ? null
                                 : _placeOrder,
                             child: Text(
@@ -660,7 +732,11 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () => setState(() => _checkoutOpen = true),
+                      onPressed: _catalogLoading ||
+                              !_catalogLoaded ||
+                              hasUnavailableItems
+                          ? null
+                          : () => setState(() => _checkoutOpen = true),
                       child: const Text('PROCEED TO CHECKOUT'),
                     ),
                   ),

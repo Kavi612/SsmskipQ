@@ -36,7 +36,8 @@ class StudentShell extends StatefulWidget {
 
 class _StudentShellState extends State<StudentShell> {
   late int _index;
-  final int _homeRefreshToken = 0;
+  int _homeRefreshToken = 0;
+  int _cartRefreshToken = 0;
 
   @override
   void initState() {
@@ -50,6 +51,8 @@ class _StudentShellState extends State<StudentShell> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialTab != widget.initialTab) {
       _index = widget.initialTab.clamp(0, 3);
+      if (_index == 0) _homeRefreshToken++;
+      if (_index == 1) _cartRefreshToken++;
     }
   }
 
@@ -65,6 +68,7 @@ class _StudentShellState extends State<StudentShell> {
         menuService: widget.menuService,
         ordersService: widget.ordersService,
         paymentService: widget.paymentService,
+        refreshToken: _cartRefreshToken,
       ),
       StudentTrackOrderListScreen(
         ordersService: widget.ordersService,

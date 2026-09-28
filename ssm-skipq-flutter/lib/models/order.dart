@@ -327,7 +327,7 @@ class CartItem {
   final String categoryId;
   final String categoryName;
 
-  CartItem copyWith({int? quantity}) {
+  CartItem copyWith({int? quantity, bool? available}) {
     return CartItem(
       menuItemId: menuItemId,
       name: name,
@@ -335,7 +335,7 @@ class CartItem {
       quantity: quantity ?? this.quantity,
       imageUrl: imageUrl,
       isVeg: isVeg,
-      available: available,
+      available: available ?? this.available,
       categoryId: categoryId,
       categoryName: categoryName,
     );

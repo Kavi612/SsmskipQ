@@ -21,6 +21,19 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateAvailability(Map<String, bool> availabilityById) {
+    var changed = false;
+    for (var index = 0; index < _items.length; index++) {
+      final item = _items[index];
+      final available = availabilityById[item.menuItemId] ?? false;
+      if (item.available != available) {
+        _items[index] = item.copyWith(available: available);
+        changed = true;
+      }
+    }
+    if (changed) notifyListeners();
+  }
+
   int getQuantity(String menuItemId) {
     return _items
             .firstWhere(

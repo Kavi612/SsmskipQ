@@ -120,6 +120,58 @@ void main() {
     expect(find.text('₹199'), findsOneWidget);
   });
 
+  testWidgets('FoodCard shows Sold Out instead of an add control',
+      (tester) async {
+    final item = MenuItem(
+      id: 'menu-sold-out',
+      name: 'Samosa',
+      description: 'Tasty item',
+      price: 199,
+      categoryId: 'main',
+      categoryName: 'Main',
+      imageUrl: 'https://example.com/item.jpg',
+      isVeg: true,
+      available: false,
+      createdAt: DateTime.now(),
+    );
+    final cart = CartProvider();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: cart,
+        child: MaterialApp(
+          home: Center(
+            child: SizedBox(
+              width: 170,
+              child: FoodCard(item: item, orderingOpen: true),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Sold Out'), findsOneWidget);
+    expect(find.text('ADD'), findsNothing);
+    await tester.tap(find.text('Sold Out'));
+    expect(cart.items, isEmpty);
+  });
+
+  test('Cart availability follows the latest menu availability', () {
+    final cart = CartProvider();
+    cart.addItem(
+      menuItemId: 'menu-sold-out',
+      name: 'Samosa',
+      price: 199,
+      imageUrl: '',
+      isVeg: true,
+      available: true,
+    );
+
+    cart.updateAvailability({'menu-sold-out': false});
+
+    expect(cart.items.single.available, isFalse);
+  });
+
   testWidgets('FoodCard quantity stepper stays synchronized with the cart',
       (tester) async {
     final item = MenuItem(
@@ -345,7 +397,8 @@ void main() {
       id: 'order-2',
       studentId: 'student-2',
       items: const [
-        OrderItem(menuItemId: 'item-2', name: 'Burger', price: 150, quantity: 1),
+        OrderItem(
+            menuItemId: 'item-2', name: 'Burger', price: 150, quantity: 1),
       ],
       total: 150,
       paymentMethod: PaymentMethod.googlePay,
@@ -355,6 +408,7 @@ void main() {
       createdAt: DateTime.now(),
     );
 
-    expect(getCurrentActiveOrderForStudent([order], orderId: order.id), isNotNull);
+    expect(
+        getCurrentActiveOrderForStudent([order], orderId: order.id), isNotNull);
   });
 }
