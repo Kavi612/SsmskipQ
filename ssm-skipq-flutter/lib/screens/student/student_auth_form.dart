@@ -128,6 +128,7 @@ class _StudentAuthFormState extends State<StudentAuthForm> {
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
+              keyboardType: TextInputType.name,
               decoration: InputDecoration(
                 hintText: 'Your name',
                 errorText:
