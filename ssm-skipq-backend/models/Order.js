@@ -58,8 +58,10 @@ const orderSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
+        'PRE_BOOKED',
         'PENDING',
         'CONFIRMED',
+        'ACTIVE',
         'PREPARING',
         'READY',
         'PICKED_UP',
@@ -100,6 +102,7 @@ const orderSchema = new mongoose.Schema(
 
 orderSchema.index({ studentId: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ status: 1, createdAt: 1 });
 orderSchema.index({ tokenNumber: 1, createdAt: -1 });
 
 const Order = mongoose.model('Order', orderSchema);

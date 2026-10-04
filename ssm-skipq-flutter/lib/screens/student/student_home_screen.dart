@@ -271,7 +271,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen>
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(
-                'Ordering is closed. Please visit the canteen directly.',
+                'Ordering is closed. Pre-book now and your order will enter the queue when ordering opens.',
               ),
             ),
           ],

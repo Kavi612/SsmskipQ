@@ -10,9 +10,11 @@ class OrderStatusBadge extends StatelessWidget {
 
   Color get _color {
     switch (status) {
+      case OrderStatus.preBooked:
       case OrderStatus.pending:
         return AppTheme.warning;
       case OrderStatus.confirmed:
+      case OrderStatus.active:
       case OrderStatus.preparing:
         return AppTheme.primary;
       case OrderStatus.ready:

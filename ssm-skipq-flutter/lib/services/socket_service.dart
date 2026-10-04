@@ -65,6 +65,22 @@ class SocketService {
     });
   }
 
+  void onOrderAccepted(void Function(String orderId, String message) handler) {
+    _socket?.on('order:accepted', (data) {
+      if (data is Map) {
+        final payload = Map<String, dynamic>.from(data);
+        final orderId = payload['orderId']?.toString() ?? '';
+        if (orderId.isNotEmpty) {
+          handler(
+            orderId,
+            payload['body'] as String? ??
+                'Order accepted — please pay now to confirm.',
+          );
+        }
+      }
+    });
+  }
+
   void onOrderingWindow(void Function(OrderingWindow window) handler) {
     _socket?.on('settings:ordering-window', (data) {
       if (data is Map) {

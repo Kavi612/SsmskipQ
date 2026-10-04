@@ -27,7 +27,7 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
   bool _loading = true;
   String? _error;
   String? _actionLoadingId;
-  String _statusFilter = 'all';
+  String _statusFilter = 'pending';
 
   @override
   void initState() {
@@ -108,13 +108,21 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
     return _orders.where((order) => isTodayIst(order.createdAt)).where((order) {
       switch (_statusFilter) {
         case 'pending':
-          return order.status == OrderStatus.pending;
+          return order.status == OrderStatus.pending ||
+              (order.status == OrderStatus.confirmed &&
+                  order.paymentStatus == PaymentStatus.pending);
+        case 'active':
+          return order.status == OrderStatus.active ||
+              order.status == OrderStatus.preparing ||
+              order.status == OrderStatus.ready ||
+              (order.status == OrderStatus.confirmed &&
+                  order.paymentStatus == PaymentStatus.paid);
         case 'completed':
           return order.status == OrderStatus.pickedUp;
         case 'cancelled':
           return order.status == OrderStatus.cancelled;
         default:
-          return true;
+          return false;
       }
     }).toList();
   }
@@ -122,23 +130,18 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final visibleOrders = _filteredOrders;
-    final active = visibleOrders
-        .where((o) =>
-            o.status != OrderStatus.pickedUp &&
-            o.status != OrderStatus.cancelled)
-        .length;
 
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Today · $active active · ${visibleOrders.length} orders'),
+          Text('Today · ${visibleOrders.length} orders'),
           const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: ['all', 'pending', 'completed', 'cancelled']
+              children: ['pending', 'active', 'completed', 'cancelled']
                   .map((status) => Padding(
                         padding: const EdgeInsets.only(right: 10),
                         child: ChoiceChip(
@@ -166,7 +169,10 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
             )
           else
             ...visibleOrders.map((order) {
-              final action = order.status.managerAction;
+              final action = order.status == OrderStatus.confirmed &&
+                      order.paymentStatus == PaymentStatus.paid
+                  ? 'Collected'
+                  : order.status.managerAction;
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: Padding(
@@ -190,6 +196,17 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
                             : formatIstDateTime(order.createdAt),
                         style: const TextStyle(color: AppTheme.textSecondary),
                       ),
+                      if (order.status == OrderStatus.confirmed &&
+                          order.paymentStatus == PaymentStatus.pending) ...[
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Awaiting Payment',
+                          style: TextStyle(
+                            color: AppTheme.warning,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       ...order.items.map(
                           (item) => Text('${item.name} × ${item.quantity}')),
@@ -269,6 +286,8 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
     switch (status) {
       case 'pending':
         return 'Pending';
+      case 'active':
+        return 'Active';
       case 'completed':
         return 'Completed';
       case 'cancelled':

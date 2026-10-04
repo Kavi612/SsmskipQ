@@ -4,6 +4,7 @@ import {
   getMyOrders,
   getMyOrderById,
   getManagerOrders,
+  getManagerPrebookAnalytics,
   getOrderAnalytics,
   advanceOrderStatus,
   cancelOrder,
@@ -34,6 +35,12 @@ router.post(
 );
 
 router.get('/analytics', authenticate, authorize('manager'), getOrderAnalytics);
+router.get(
+  '/prebook-analytics',
+  authenticate,
+  authorize('manager'),
+  getManagerPrebookAnalytics,
+);
 router.get('/manager', authenticate, authorize('manager'), getManagerOrders);
 router.patch(
   '/:id/status',

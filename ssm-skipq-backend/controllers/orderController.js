@@ -5,23 +5,19 @@ import MenuItem from '../models/MenuItem.js';
 import Feedback from '../models/Feedback.js';
 import { getTodayDateKey, formatTokenNumber, getTodayStartIst } from '../utils/token.js';
 import { assertOrderingOpen } from '../controllers/settingsController.js';
-import {
-  createRazorpayOrder,
-  getRazorpayKeyId,
-  isRazorpayConfigured,
-  isRazorpayTestMode,
-} from '../config/razorpay.js';
 
 const STATUS_FLOW = {
   PENDING: 'CONFIRMED',
-  CONFIRMED: 'READY',
+  CONFIRMED: 'ACTIVE',
+  ACTIVE: 'PICKED_UP',
   PREPARING: 'READY',
   READY: 'PICKED_UP',
 };
 
 const STATUS_ACTION_LABELS = {
   PENDING: 'Accept',
-  CONFIRMED: 'Ready',
+  CONFIRMED: 'Collected',
+  ACTIVE: 'Collected',
   PREPARING: 'Ready',
   READY: 'Collected',
 };
@@ -95,13 +91,14 @@ export const createOrder = async (req, res) => {
 
   try {
     const { isOpen } = await assertOrderingOpen();
-    if (!isOpen) {
+    const isPreBook = req.body.isPreBook === true;
+    if (!isOpen && !isPreBook) {
       return res.status(403).json({
         success: false,
-        message:
-          'Ordering is closed. Please visit the canteen directly.',
+        message: 'Ordering is closed. Choose Pre-book to place a future order.',
       });
     }
+    const initialStatus = isPreBook && !isOpen ? 'PRE_BOOKED' : 'PENDING';
 
     const { items, paymentMethod, note } = req.body;
     const studentId = req.user.id;
@@ -114,26 +111,15 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    const validMethods = ['GOOGLE_PAY', 'PHONEPE', 'PAY_AT_COUNTER', 'RAZORPAY'];
+    const validMethods = ['RAZORPAY'];
     if (!validMethods.includes(paymentMethod)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid payment method',
+        message: 'Only online Razorpay payments are supported',
       });
     }
 
-    if (paymentMethod === 'RAZORPAY' && !isRazorpayConfigured()) {
-      return res.status(503).json({
-        success: false,
-        message:
-          'Online payment is not configured yet. Use Pay at Counter or add Razorpay test keys.',
-      });
-    }
-
-    const paymentStatus =
-      paymentMethod === 'PAY_AT_COUNTER' || paymentMethod === 'RAZORPAY'
-        ? 'PENDING'
-        : 'PAID';
+    const paymentStatus = 'PENDING';
 
     for (const item of items) {
       if (!item.menuItemId || !item.quantity) {
@@ -218,7 +204,7 @@ export const createOrder = async (req, res) => {
             total: calculatedTotal,
             paymentMethod,
             paymentStatus,
-            status: 'PENDING',
+            status: initialStatus,
             tokenNumber,
             note: trimmedNote,
           },
@@ -239,36 +225,10 @@ export const createOrder = async (req, res) => {
     io.to('manager').emit('order:created', formatted);
     io.to(`student:${studentId}`).emit('order:updated', formatted);
 
-    let razorpay = null;
-
-    if (paymentMethod === 'RAZORPAY') {
-      const razorpayOrder = await createRazorpayOrder({
-        amountInr: calculatedTotal,
-        receipt: createdOrder._id.toString(),
-        notes: {
-          tokenNumber: createdOrder.tokenNumber,
-          studentId,
-        },
-      });
-
-      await Order.findByIdAndUpdate(createdOrder._id, {
-        razorpayOrderId: razorpayOrder.id,
-      });
-
-      razorpay = {
-        orderId: razorpayOrder.id,
-        amount: razorpayOrder.amount,
-        currency: razorpayOrder.currency,
-        keyId: getRazorpayKeyId(),
-        testMode: isRazorpayTestMode(),
-      };
-    }
-
     return res.status(201).json({
       success: true,
       data: {
         order: formatted,
-        razorpay,
       },
     });
   } catch (error) {
@@ -412,6 +372,102 @@ export const getManagerOrders = async (_req, res) => {
   }
 };
 
+export const getManagerPrebookAnalytics = async (_req, res) => {
+  try {
+    const orders = await Order.find({ status: 'PRE_BOOKED' })
+      .select('items')
+      .lean();
+    const menuItemIds = [
+      ...new Set(
+        orders.flatMap((order) =>
+          order.items.map((item) => item.menuItemId?.toString()).filter(Boolean),
+        ),
+      ),
+    ];
+    const menuItems = await MenuItem.find({ _id: { $in: menuItemIds } })
+      .select('name category')
+      .populate('category', 'name')
+      .lean();
+    const menuById = new Map(
+      menuItems.map((item) => [item._id.toString(), item]),
+    );
+    const categoryTotals = new Map();
+
+    for (const order of orders) {
+      for (const line of order.items) {
+        const menuItem = menuById.get(line.menuItemId?.toString());
+        const categoryId = menuItem?.category?._id?.toString() ?? 'uncategorized';
+        const categoryName = menuItem?.category?.name ?? 'Other';
+        let category = categoryTotals.get(categoryId);
+        if (!category) {
+          category = {
+            id: categoryId,
+            name: categoryName,
+            totalQuantity: 0,
+            items: new Map(),
+          };
+          categoryTotals.set(categoryId, category);
+        }
+        const itemId = line.menuItemId?.toString() ?? line.name;
+        const item = category.items.get(itemId) ?? {
+          id: itemId,
+          name: menuItem?.name ?? line.name,
+          quantity: 0,
+        };
+        item.quantity += line.quantity;
+        category.items.set(itemId, item);
+        category.totalQuantity += line.quantity;
+      }
+    }
+
+    const categories = [...categoryTotals.values()]
+      .map((category) => ({
+        ...category,
+        items: [...category.items.values()].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
+      }))
+      .sort((a, b) => b.totalQuantity - a.totalQuantity);
+
+    return res.json({
+      success: true,
+      data: { categories },
+    });
+  } catch (error) {
+    console.error('Get pre-book analytics error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to fetch pre-book analytics',
+    });
+  }
+};
+
+export const convertPrebookOrdersIfOpen = async (io) => {
+  const { isOpen } = await assertOrderingOpen();
+  if (!isOpen) return 0;
+
+  const pendingPrebooks = await Order.find({ status: 'PRE_BOOKED' })
+    .select('_id')
+    .lean();
+  let converted = 0;
+
+  for (const prebook of pendingPrebooks) {
+    const order = await Order.findOneAndUpdate(
+      { _id: prebook._id, status: 'PRE_BOOKED' },
+      { $set: { status: 'PENDING' } },
+      { new: true },
+    ).populate('studentId', 'name mobile');
+    if (!order) continue;
+
+    const formatted = formatOrder(order);
+    io.to('manager').emit('order:updated', formatted);
+    io.to(`student:${formatted.studentId}`).emit('order:updated', formatted);
+    converted++;
+  }
+
+  return converted;
+};
+
 export const getOrderAnalytics = async (req, res) => {
   try {
     const range = req.query.range || 'day';
@@ -495,6 +551,12 @@ export const advanceOrderStatus = async (req, res) => {
     }
 
     const nextStatus = STATUS_FLOW[order.status];
+    if (order.status === 'CONFIRMED' && order.paymentStatus !== 'PAID') {
+      return res.status(409).json({
+        success: false,
+        message: 'Accepted orders must be paid before preparation can begin',
+      });
+    }
     if (!nextStatus) {
       return res.status(400).json({
         success: false,
@@ -502,10 +564,22 @@ export const advanceOrderStatus = async (req, res) => {
       });
     }
 
+    const wasPending = order.status === 'PENDING';
     order.status = nextStatus;
     await order.save();
 
     emitOrderUpdate(req, order);
+
+    if (wasPending && nextStatus === 'CONFIRMED') {
+      req.app.get('io').to(`student:${order.studentId._id}`).emit(
+        'order:accepted',
+        {
+          orderId: order._id.toString(),
+          title: 'Order accepted',
+          body: 'Order accepted — please pay now to confirm.',
+        },
+      );
+    }
 
     return res.json({
       success: true,
@@ -526,7 +600,8 @@ export const cancelOrder = async (req, res) => {
       {
         _id: req.params.id,
         studentId: req.user.id,
-        status: 'PENDING',
+        status: { $in: ['PRE_BOOKED', 'PENDING', 'CONFIRMED'] },
+        paymentStatus: 'PENDING',
       },
       { $set: { status: 'CANCELLED', cancelledBy: 'STUDENT', cancelledAt: new Date() } },
       { new: true },
@@ -554,7 +629,7 @@ export const cancelOrder = async (req, res) => {
 
     return res.status(409).json({
       success: false,
-      message: 'Only pending orders can be cancelled.',
+      message: 'Only unpaid orders can be cancelled.',
     });
   } catch (error) {
     console.error('Cancel order error:', error.message);
@@ -608,6 +683,7 @@ export const updateOrderPayment = async (req, res) => {
     }
 
     order.paymentStatus = 'PAID';
+    if (order.status === 'CONFIRMED') order.status = 'ACTIVE';
     await order.save();
 
     emitOrderUpdate(req, order);

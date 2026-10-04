@@ -7,13 +7,11 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../models/menu.dart';
 import '../../models/order.dart';
-import '../../models/payment.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/menu_service.dart';
 import '../../services/orders_service.dart';
-import '../../services/payment_service.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/menu_item_image.dart';
 import '../../widgets/veg_status_badge.dart';
@@ -23,13 +21,11 @@ class StudentCartScreen extends StatefulWidget {
     super.key,
     required this.menuService,
     required this.ordersService,
-    required this.paymentService,
     this.refreshToken = 0,
   });
 
   final MenuService menuService;
   final OrdersService ordersService;
-  final PaymentService paymentService;
   final int refreshToken;
 
   @override
@@ -58,13 +54,10 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
   List<MenuItem> _catalog = [];
   late String _crossSellHeader;
   bool _checkoutOpen = false;
-  PaymentMethod _paymentMethod = PaymentMethod.razorpay;
-  bool _loadingConfig = true;
   bool _processing = false;
   bool _catalogLoading = true;
   bool _catalogLoaded = false;
   String? _checkoutError;
-  PaymentConfig? _paymentConfig;
 
   @override
   void initState() {
@@ -72,7 +65,6 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
     _crossSellHeader =
         _crossSellHeaders[Random().nextInt(_crossSellHeaders.length)];
     _loadCatalog();
-    _loadPaymentConfig();
   }
 
   @override
@@ -100,28 +92,6 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
       setState(() => _catalogLoaded = false);
     } finally {
       if (mounted) setState(() => _catalogLoading = false);
-    }
-  }
-
-  Future<void> _loadPaymentConfig() async {
-    try {
-      final config = await widget.paymentService.fetchConfig();
-      if (!mounted) return;
-      setState(() {
-        _paymentConfig = config;
-        _paymentMethod = config.enabled
-            ? PaymentMethod.razorpay
-            : PaymentMethod.payAtCounter;
-        _loadingConfig = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _paymentConfig =
-            const PaymentConfig(enabled: false, keyId: '', testMode: false);
-        _paymentMethod = PaymentMethod.payAtCounter;
-        _loadingConfig = false;
-      });
     }
   }
 
@@ -158,51 +128,33 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
         return;
       }
 
-      final result = await widget.ordersService.createOrder(
-        items: cart.items
-            .map(
-              (item) => OrderItem(
-                menuItemId: item.menuItemId,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-              ),
-            )
-            .toList(),
-        total: cart.totalAmount,
-        paymentMethod: _paymentMethod,
-        note: cart.note,
-      );
-
-      Order finalOrder = result.order;
-
-      if (_paymentMethod == PaymentMethod.razorpay) {
-        final checkout = result.razorpay;
-        if (checkout == null) {
-          throw Exception('Razorpay checkout was not returned by the server');
-        }
-
-        final payment = await widget.paymentService.openRazorpayCheckout(
-          checkout: checkout,
-          skipqOrderId: result.order.id,
-          customerName: user.name,
-          customerMobile: user.mobile,
-          description: 'SkipQ order ${result.order.tokenNumber}',
-        );
-
-        finalOrder = await widget.paymentService.verifyRazorpayPayment(
-          orderId: result.order.id,
-          payment: payment,
-        );
-      }
+          final result = await widget.ordersService.createOrder(
+            items: cart.items
+                .map(
+                  (item) => OrderItem(
+                    menuItemId: item.menuItemId,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                  ),
+                )
+                .toList(),
+            total: cart.totalAmount,
+            isPreBook: cart.isPreBook,
+            note: cart.note,
+          );
 
       if (!mounted) return;
       setState(() => _checkoutOpen = false);
       cart.clear();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Order placed successfully')),
+        SnackBar(
+          content: Text(result.order.status == OrderStatus.preBooked
+              ? 'Pre-book placed successfully'
+              : 'Order placed successfully'),
+        ),
       );
-      context.go('/student/track-order/${finalOrder.id}', extra: finalOrder);
+      context.go('/student/track-order/${result.order.id}', extra: result.order);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -329,11 +281,10 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
     final taxes = 0;
     final total = subtotal + taxes;
     final suggestions = _suggestions;
-    final razorpayEnabled = _paymentConfig?.enabled ?? false;
     final hasUnavailableItems = cart.items.any((item) => !item.available);
 
     return AppScaffold(
-      title: 'Your Cart',
+      title: cart.isPreBook ? 'Your Pre-book Cart' : 'Your Cart',
       showBack: true,
       backTo: '/student',
       body: Column(
@@ -650,45 +601,9 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Select Payment Method',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 16),
+                          'Payment will be requested after the canteen accepts your order.',
+                          style: TextStyle(color: AppTheme.textSecondary),
                         ),
-                        const SizedBox(height: 12),
-                        if (_loadingConfig)
-                          const Center(child: CircularProgressIndicator())
-                        else ...[
-                          if (razorpayEnabled)
-                            RadioListTile<PaymentMethod>(
-                              contentPadding: EdgeInsets.zero,
-                              value: PaymentMethod.razorpay,
-                              groupValue: _paymentMethod,
-                              onChanged: _processing
-                                  ? null
-                                  : (value) =>
-                                      setState(() => _paymentMethod = value!),
-                              title: const Text('Pay Online'),
-                            )
-                          else
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8, bottom: 4),
-                              child: Text(
-                                'Online payment is not configured on the server yet. Use Pay at Counter, or add Razorpay test keys to the backend.',
-                                style: TextStyle(
-                                    color: Colors.grey.shade700, fontSize: 13),
-                              ),
-                            ),
-                          RadioListTile<PaymentMethod>(
-                            contentPadding: EdgeInsets.zero,
-                            value: PaymentMethod.payAtCounter,
-                            groupValue: _paymentMethod,
-                            onChanged: _processing
-                                ? null
-                                : (value) =>
-                                    setState(() => _paymentMethod = value!),
-                            title: const Text('Pay at Counter'),
-                          ),
-                        ],
                         if (_checkoutError != null) ...[
                           const SizedBox(height: 8),
                           Text(
@@ -713,9 +628,8 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: _processing ||
-                                    _loadingConfig ||
-                                    _catalogLoading ||
+                                onPressed: _processing ||
+                                  _catalogLoading ||
                                     !_catalogLoaded ||
                                     hasUnavailableItems
                                 ? null

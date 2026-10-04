@@ -3,8 +3,10 @@ enum PaymentMethod { razorpay, googlePay, phonePe, payAtCounter }
 enum PaymentStatus { pending, paid }
 
 enum OrderStatus {
+  preBooked,
   pending,
   confirmed,
+  active,
   preparing,
   ready,
   pickedUp,
@@ -14,12 +16,14 @@ enum OrderStatus {
 extension OrderStatusExtensions on OrderStatus {
   bool get isActiveOrderStatus {
     switch (this) {
+      case OrderStatus.preBooked:
       case OrderStatus.pending:
       case OrderStatus.confirmed:
+      case OrderStatus.active:
       case OrderStatus.preparing:
       case OrderStatus.ready:
-      case OrderStatus.pickedUp:
         return true;
+      case OrderStatus.pickedUp:
       case OrderStatus.cancelled:
         return false;
     }
@@ -27,10 +31,11 @@ extension OrderStatusExtensions on OrderStatus {
 }
 
 Order? getCurrentActiveOrderForStudent(List<Order> orders, {String? orderId}) {
-  final activeOrders =
-      orders.where((order) => order.status.isActiveOrderStatus);
   if (orderId != null) {
-    final match = activeOrders.where((order) => order.id == orderId).toList();
+    final match = orders
+        .where((order) =>
+            order.id == orderId && order.status != OrderStatus.cancelled)
+        .toList();
     if (match.isNotEmpty) {
       return match.reduce((current, next) =>
           next.createdAt.isAfter(current.createdAt) ? next : current);
@@ -38,6 +43,8 @@ Order? getCurrentActiveOrderForStudent(List<Order> orders, {String? orderId}) {
     return null;
   }
 
+  final activeOrders =
+      orders.where((order) => order.status.isActiveOrderStatus);
   if (activeOrders.isEmpty) return null;
   return activeOrders.reduce((current, next) =>
       next.createdAt.isAfter(current.createdAt) ? next : current);
@@ -95,8 +102,12 @@ extension PaymentStatusX on PaymentStatus {
 extension OrderStatusX on OrderStatus {
   static OrderStatus fromApi(String? value) {
     switch (value) {
+      case 'PRE_BOOKED':
+        return OrderStatus.preBooked;
       case 'CONFIRMED':
         return OrderStatus.confirmed;
+      case 'ACTIVE':
+        return OrderStatus.active;
       case 'PREPARING':
         return OrderStatus.preparing;
       case 'READY':
@@ -113,8 +124,12 @@ extension OrderStatusX on OrderStatus {
 
   String get apiValue {
     switch (this) {
+      case OrderStatus.preBooked:
+        return 'PRE_BOOKED';
       case OrderStatus.confirmed:
         return 'CONFIRMED';
+      case OrderStatus.active:
+        return 'ACTIVE';
       case OrderStatus.preparing:
         return 'PREPARING';
       case OrderStatus.ready:
@@ -130,16 +145,20 @@ extension OrderStatusX on OrderStatus {
 
   String get label {
     switch (this) {
+      case OrderStatus.preBooked:
+        return 'Pre-booked';
       case OrderStatus.pending:
         return 'Pending';
       case OrderStatus.confirmed:
         return 'Accepted';
+      case OrderStatus.active:
+        return 'Preparing';
       case OrderStatus.preparing:
         return 'Accepted';
       case OrderStatus.ready:
         return 'Ready';
       case OrderStatus.pickedUp:
-        return 'Collected';
+        return 'Completed';
       case OrderStatus.cancelled:
         return 'Cancelled';
     }
@@ -147,9 +166,14 @@ extension OrderStatusX on OrderStatus {
 
   String? get managerAction {
     switch (this) {
+      case OrderStatus.preBooked:
+        return null;
       case OrderStatus.pending:
         return 'Accept';
+      case OrderStatus.active:
+        return 'Ready';
       case OrderStatus.confirmed:
+        return null;
       case OrderStatus.preparing:
         return 'Ready';
       case OrderStatus.ready:

@@ -82,7 +82,6 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
         path: '/student/checkout',
         builder: (_, __) => StudentCheckoutScreen(
           ordersService: services.ordersService,
-          paymentService: services.paymentService,
         ),
       ),
       GoRoute(
@@ -107,9 +106,11 @@ GoRouter createRouter(AppServices services, AuthProvider auth) {
             orderId: orderId,
             initialOrder: order,
             ordersService: services.ordersService,
+            paymentService: services.paymentService,
             socketService: services.socketService,
             feedbackService: services.feedbackService,
             showBottomNavigation: true,
+            startPayment: state.uri.queryParameters['pay'] == 'true',
           );
         },
       ),

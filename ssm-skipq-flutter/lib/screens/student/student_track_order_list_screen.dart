@@ -5,6 +5,7 @@ import '../../config/theme.dart';
 import '../../models/order.dart';
 import '../../services/feedback_service.dart';
 import '../../services/orders_service.dart';
+import '../../services/payment_service.dart';
 import '../../services/socket_service.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../screens/student/student_track_order_screen.dart';
@@ -13,11 +14,13 @@ class StudentTrackOrderListScreen extends StatefulWidget {
   const StudentTrackOrderListScreen({
     super.key,
     required this.ordersService,
+    required this.paymentService,
     required this.socketService,
     required this.feedbackService,
   });
 
   final OrdersService ordersService;
+  final PaymentService paymentService;
   final SocketService socketService;
   final FeedbackService feedbackService;
 
@@ -124,6 +127,7 @@ class _StudentTrackOrderListScreenState
       orderId: _activeOrder!.id,
       initialOrder: _activeOrder,
       ordersService: widget.ordersService,
+      paymentService: widget.paymentService,
       socketService: widget.socketService,
       feedbackService: widget.feedbackService,
     );

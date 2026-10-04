@@ -20,7 +20,8 @@ class FoodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
-    final quantity = cart.getQuantity(item.id);
+    final isPreBook = !orderingOpen;
+    final quantity = cart.getQuantityForMode(item.id, isPreBook: isPreBook);
     final vegBadge = VegStatusBadge(isVeg: item.isVeg);
 
     return Container(
@@ -73,7 +74,7 @@ class FoodCard extends StatelessWidget {
                       color: const Color(0xFFFFF7ED),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: const Color(0xFFF59E0B).withOpacity(0.35),
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
                       ),
                     ),
                     child: const Text(
@@ -149,29 +150,58 @@ class FoodCard extends StatelessWidget {
                       )
                     : quantity == 0
                         ? GestureDetector(
-                            onTap: () => cart.addItem(
-                              menuItemId: item.id,
-                              name: item.name,
-                              price: item.price,
-                              imageUrl: item.imageUrl,
-                              isVeg: item.isVeg,
-                              available: item.available,
-                              categoryId: item.categoryId,
-                              categoryName: item.categoryName,
-                            ),
-                            child: const Padding(
+                            onTap: () {
+                              final added = cart.addItem(
+                                menuItemId: item.id,
+                                name: item.name,
+                                price: item.price,
+                                imageUrl: item.imageUrl,
+                                isVeg: item.isVeg,
+                                available: item.available,
+                                isPreBook: isPreBook,
+                                categoryId: item.categoryId,
+                                categoryName: item.categoryName,
+                              );
+                              if (!added) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Clear your current cart before starting a pre-book or regular order.',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Padding(
                               padding: EdgeInsets.symmetric(
-                                horizontal: 12,
+                                horizontal: isPreBook ? 8 : 12,
                                 vertical: 7,
                               ),
-                              child: Text(
-                                'ADD',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                              child: isPreBook
+                                  ? const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.schedule, size: 13,
+                                            color: Colors.white),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Pre-book',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : const Text(
+                                      'ADD',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                             ),
                           )
                         : Row(

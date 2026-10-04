@@ -5,9 +5,11 @@ import '../models/order.dart';
 class CartProvider extends ChangeNotifier {
   final List<CartItem> _items = [];
   String _note = '';
+  bool? _isPreBook;
 
   List<CartItem> get items => List.unmodifiable(_items);
   String get note => _note;
+  bool get isPreBook => _isPreBook ?? false;
 
   int get totalItems => _items.fold(0, (sum, item) => sum + item.quantity);
 
@@ -51,16 +53,21 @@ class CartProvider extends ChangeNotifier {
             .quantity;
   }
 
-  void addItem({
+  int getQuantityForMode(String menuItemId, {required bool isPreBook}) =>
+      _isPreBook == isPreBook ? getQuantity(menuItemId) : 0;
+
+  bool addItem({
     required String menuItemId,
     required String name,
     required num price,
     required String imageUrl,
     required bool isVeg,
     required bool available,
+    bool isPreBook = false,
     String categoryId = '',
     String categoryName = '',
   }) {
+    if (!_canAdd(isPreBook)) return false;
     final index = _items.indexWhere((e) => e.menuItemId == menuItemId);
     if (index >= 0) {
       _items[index] = _items[index].copyWith(quantity: _items[index].quantity + 1);
@@ -80,6 +87,7 @@ class CartProvider extends ChangeNotifier {
       );
     }
     notifyListeners();
+    return true;
   }
 
   void addItemWithQuantity({
@@ -94,6 +102,7 @@ class CartProvider extends ChangeNotifier {
     String categoryName = '',
   }) {
     if (quantity < 1) return;
+    if (!_canAdd(false)) return;
     final index = _items.indexWhere((e) => e.menuItemId == menuItemId);
     if (index >= 0) {
       _items[index] = _items[index].copyWith(
@@ -131,6 +140,7 @@ class CartProvider extends ChangeNotifier {
     final next = _items[index].quantity - 1;
     if (next <= 0) {
       _items.removeAt(index);
+      if (_items.isEmpty) _isPreBook = null;
     } else {
       _items[index] = _items[index].copyWith(quantity: next);
     }
@@ -139,12 +149,20 @@ class CartProvider extends ChangeNotifier {
 
   void removeItem(String menuItemId) {
     _items.removeWhere((e) => e.menuItemId == menuItemId);
+    if (_items.isEmpty) _isPreBook = null;
     notifyListeners();
   }
 
   void clear() {
     _items.clear();
     _note = '';
+    _isPreBook = null;
     notifyListeners();
+  }
+
+  bool _canAdd(bool isPreBook) {
+    if (_items.isNotEmpty && _isPreBook != isPreBook) return false;
+    _isPreBook ??= isPreBook;
+    return true;
   }
 }

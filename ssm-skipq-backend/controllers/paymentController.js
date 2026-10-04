@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import Order from '../models/Order.js';
 import { formatOrder } from './orderController.js';
 import {
+  createRazorpayOrder,
   getRazorpayKeyId,
   isRazorpayConfigured,
   isRazorpayTestMode,
@@ -25,6 +26,74 @@ export const getPaymentConfig = (_req, res) => {
       },
     },
   });
+};
+
+export const createRazorpayCheckout = async (req, res) => {
+  try {
+    if (!isRazorpayConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: 'Razorpay is not configured on the server',
+      });
+    }
+
+    const order = await Order.findOne({
+      _id: req.params.orderId,
+      studentId: req.user.id,
+    }).populate('studentId', 'name mobile');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    if (order.paymentMethod !== 'RAZORPAY') {
+      return res.status(400).json({
+        success: false,
+        message: 'This order is not configured for online payment',
+      });
+    }
+
+    if (order.status !== 'CONFIRMED' || order.paymentStatus !== 'PENDING') {
+      return res.status(409).json({
+        success: false,
+        message: 'Payment is available only after the manager accepts the order',
+      });
+    }
+
+    const razorpayOrder = await createRazorpayOrder({
+      amountInr: order.total,
+      receipt: order._id.toString(),
+      notes: {
+        tokenNumber: order.tokenNumber,
+        studentId: req.user.id,
+      },
+    });
+
+    order.razorpayOrderId = razorpayOrder.id;
+    await order.save();
+
+    return res.json({
+      success: true,
+      data: {
+        razorpay: {
+          orderId: razorpayOrder.id,
+          amount: razorpayOrder.amount,
+          currency: razorpayOrder.currency,
+          keyId: getRazorpayKeyId(),
+          testMode: isRazorpayTestMode(),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Create Razorpay order error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to start online payment',
+    });
+  }
 };
 
 export const verifyRazorpayPayment = async (req, res) => {
@@ -80,6 +149,13 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
+    if (order.status !== 'CONFIRMED' || order.paymentStatus !== 'PENDING') {
+      return res.status(409).json({
+        success: false,
+        message: 'Payment is available only for accepted, unpaid orders',
+      });
+    }
+
     const expectedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
       .update(`${razorpayOrderId}|${razorpayPaymentId}`)
@@ -92,23 +168,43 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    if (order.razorpayOrderId && order.razorpayOrderId !== razorpayOrderId) {
+    if (!order.razorpayOrderId || order.razorpayOrderId !== razorpayOrderId) {
       return res.status(400).json({
         success: false,
         message: 'Razorpay order mismatch',
       });
     }
 
-    order.paymentStatus = 'PAID';
-    order.razorpayOrderId = razorpayOrderId;
-    order.razorpayPaymentId = razorpayPaymentId;
-    await order.save();
+    const paidOrder = await Order.findOneAndUpdate(
+      {
+        _id: order._id,
+        studentId: req.user.id,
+        status: 'CONFIRMED',
+        paymentStatus: 'PENDING',
+        razorpayOrderId,
+      },
+      {
+        $set: {
+          paymentStatus: 'PAID',
+          status: 'ACTIVE',
+          razorpayPaymentId,
+        },
+      },
+      { new: true },
+    ).populate('studentId', 'name mobile');
 
-    emitOrderUpdate(req, order);
+    if (!paidOrder) {
+      return res.status(409).json({
+        success: false,
+        message: 'Order changed before payment could be confirmed',
+      });
+    }
+
+    emitOrderUpdate(req, paidOrder);
 
     return res.json({
       success: true,
-      data: { order: formatOrder(order) },
+      data: { order: formatOrder(paidOrder) },
     });
   } catch (error) {
     console.error('Verify Razorpay payment error:', error.message);

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
 import '../../models/order.dart';
+import '../../models/user.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/feedback_service.dart';
 import '../../services/orders_service.dart';
+import '../../services/payment_service.dart';
 import '../../services/socket_service.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/order_feedback_form.dart';
@@ -16,17 +20,21 @@ class StudentTrackOrderScreen extends StatefulWidget {
     required this.orderId,
     this.initialOrder,
     required this.ordersService,
+    this.paymentService,
     required this.socketService,
     required this.feedbackService,
     this.showBottomNavigation = false,
+    this.startPayment = false,
   });
 
   final String orderId;
   final Order? initialOrder;
   final OrdersService ordersService;
+  final PaymentService? paymentService;
   final SocketService socketService;
   final FeedbackService feedbackService;
   final bool showBottomNavigation;
+  final bool startPayment;
 
   @override
   State<StudentTrackOrderScreen> createState() =>
@@ -37,6 +45,8 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
   Order? _order;
   bool _loading = true;
   bool _cancelling = false;
+  bool _paying = false;
+  bool _paymentPromptStarted = false;
   String? _error;
   final Set<String> _submittedFeedback = {};
 
@@ -73,11 +83,22 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
           orders.where((order) => order.id == widget.orderId).toList();
       final latest = matches.isEmpty ? widget.initialOrder : matches.first;
       if (!mounted) return;
+      final resolvedOrder = latest ?? _order;
       setState(() {
-        _order = latest ?? _order;
+        _order = resolvedOrder;
         _loading = false;
         _error = null;
       });
+      if (widget.startPayment &&
+          !_paymentPromptStarted &&
+          resolvedOrder != null &&
+          resolvedOrder.status == OrderStatus.confirmed &&
+          resolvedOrder.paymentStatus == PaymentStatus.pending) {
+        _paymentPromptStarted = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _payNow(resolvedOrder);
+        });
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -90,9 +111,13 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
 
   String _getStatusMessage(OrderStatus status) {
     switch (status) {
+      case OrderStatus.preBooked:
+        return 'Pre-booked. It will move to Pending when the canteen opens.';
       case OrderStatus.pending:
+        return 'Your order has been received. Waiting for the canteen to accept it.';
       case OrderStatus.confirmed:
-        return 'Your order has been received!';
+        return 'Order accepted — please pay now to confirm.';
+      case OrderStatus.active:
       case OrderStatus.preparing:
         return 'The canteen is preparing your food.';
       case OrderStatus.ready:
@@ -101,6 +126,73 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
         return 'Order completed. Enjoy your meal!';
       case OrderStatus.cancelled:
         return 'This order has been cancelled.';
+    }
+  }
+
+  Future<void> _payNow(Order order) async {
+    final shouldPay = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Confirm payment'),
+        content: const Text(
+          'Once paid, this order cannot be cancelled. Proceed to pay?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+    if (shouldPay != true || !mounted) return;
+
+    final paymentService = widget.paymentService;
+    if (paymentService == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Online payment is unavailable.')),
+      );
+      return;
+    }
+
+    final user = context.read<AuthProvider>().user;
+    if (user is! StudentUser) return;
+
+    setState(() => _paying = true);
+    try {
+        final checkout = await paymentService.createRazorpayCheckout(order.id);
+        final payment = await paymentService.openRazorpayCheckout(
+        checkout: checkout,
+        skipqOrderId: order.id,
+        customerName: user.name,
+        customerMobile: user.mobile,
+        description: 'SkipQ order ${order.tokenNumber}',
+      );
+      final paidOrder = await paymentService.verifyRazorpayPayment(
+        orderId: order.id,
+        payment: payment,
+      );
+      if (!mounted) return;
+      setState(() => _order = paidOrder);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment successful. Order is Active.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      final message = error is String
+          ? error
+          : context.read<AuthProvider>().messageFromError(
+                error,
+                fallback: 'Unable to complete payment. Please try again.',
+              );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) setState(() => _paying = false);
     }
   }
 
@@ -246,6 +338,10 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
     }
 
     final order = _order!;
+    final canCancel = order.paymentStatus == PaymentStatus.pending &&
+      (order.status == OrderStatus.preBooked ||
+        order.status == OrderStatus.pending ||
+        order.status == OrderStatus.confirmed);
 
     return AppScaffold(
       title: 'Track Order',
@@ -296,7 +392,25 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
                 ),
               ),
             ),
-            if (order.status == OrderStatus.pending) ...[
+            if (order.status == OrderStatus.confirmed &&
+                order.paymentStatus == PaymentStatus.pending) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _paying ? null : () => _payNow(order),
+                  icon: _paying
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.payment),
+                  label: Text(_paying ? 'Processing payment…' : 'Pay Now'),
+                ),
+              ),
+            ],
+            if (canCancel && !_paying) ...[
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: _cancelling ? null : _cancelOrder,

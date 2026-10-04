@@ -9,23 +9,27 @@ class OrderStatusTimeline extends StatelessWidget {
   final OrderStatus status;
 
   static const _steps = [
-    (OrderStatus.pending, 'Order Placed', Icons.receipt_long_outlined),
-    (OrderStatus.preparing, 'Preparing', Icons.kitchen_outlined),
-    (OrderStatus.ready, 'Ready for Pickup', Icons.restaurant_menu_outlined),
-    (OrderStatus.pickedUp, 'Collected', Icons.check_circle_outline),
+    (OrderStatus.preBooked, 'Pre-booked', Icons.schedule_outlined),
+    (OrderStatus.pending, 'Pending', Icons.receipt_long_outlined),
+    (OrderStatus.confirmed, 'Accepted', Icons.check_circle_outline),
+    (OrderStatus.active, 'Preparing', Icons.kitchen_outlined),
+    (OrderStatus.pickedUp, 'Completed', Icons.restaurant_menu_outlined),
   ];
 
   int _rank(OrderStatus s) {
     switch (s) {
       case OrderStatus.pending:
-      case OrderStatus.confirmed:
-        return 0;
-      case OrderStatus.preparing:
         return 1;
-      case OrderStatus.ready:
+      case OrderStatus.confirmed:
         return 2;
-      case OrderStatus.pickedUp:
+      case OrderStatus.active:
+      case OrderStatus.preparing:
+      case OrderStatus.ready:
         return 3;
+      case OrderStatus.pickedUp:
+        return 4;
+      case OrderStatus.preBooked:
+        return 0;
       case OrderStatus.cancelled:
         return -1;
     }
@@ -42,8 +46,8 @@ class OrderStatusTimeline extends StatelessWidget {
           children: [
             Positioned(
               top: 19,
-              left: constraints.maxWidth / 8,
-              right: constraints.maxWidth / 8,
+              left: constraints.maxWidth / (_steps.length * 2),
+              right: constraints.maxWidth / (_steps.length * 2),
               child: Container(
                 height: 3,
                 color: status == OrderStatus.cancelled || current < 1

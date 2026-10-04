@@ -51,6 +51,8 @@ String? studentStatusToastTitle(OrderStatus status) {
     case OrderStatus.confirmed:
     case OrderStatus.preparing:
       return 'Order Accepted';
+      case OrderStatus.active:
+        return 'Order Active';
     case OrderStatus.ready:
       return 'Ready for Pickup';
     default:

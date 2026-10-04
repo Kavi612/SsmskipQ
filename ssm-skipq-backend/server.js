@@ -16,6 +16,7 @@ import {
   isOriginAllowed,
 } from './utils/corsOrigins.js';
 import { socketAuthMiddleware } from './middleware/socketAuth.js';
+import { convertPrebookOrdersIfOpen } from './controllers/orderController.js';
 
 dotenv.config();
 
@@ -132,6 +133,13 @@ const startServer = async () => {
 
   try {
     await connectDB();
+    const convertPrebooks = () =>
+      convertPrebookOrdersIfOpen(io).catch((error) => {
+        console.error('Pre-book conversion error:', error.message);
+      });
+    await convertPrebooks();
+    const prebookTimer = setInterval(convertPrebooks, 15_000);
+    prebookTimer.unref();
   } catch (error) {
     console.error('MongoDB connection error:', error.message);
   }

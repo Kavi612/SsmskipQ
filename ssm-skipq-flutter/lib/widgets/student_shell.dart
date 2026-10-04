@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/ordering_window_provider.dart';
 import '../services/menu_service.dart';
@@ -44,6 +45,27 @@ class _StudentShellState extends State<StudentShell> {
     super.initState();
     _index = widget.initialTab.clamp(0, 3);
     context.read<OrderingWindowProvider>().initialize();
+    widget.socketService.joinStudentRoom();
+    widget.socketService.onOrderAccepted((orderId, message) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(
+            label: 'PAY NOW',
+            onPressed: () =>
+                context.go('/student/track-order/$orderId?pay=true'),
+          ),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.socketService.off('order:accepted');
+    super.dispose();
   }
 
   @override
@@ -67,11 +89,11 @@ class _StudentShellState extends State<StudentShell> {
       StudentCartScreen(
         menuService: widget.menuService,
         ordersService: widget.ordersService,
-        paymentService: widget.paymentService,
         refreshToken: _cartRefreshToken,
       ),
       StudentTrackOrderListScreen(
         ordersService: widget.ordersService,
+        paymentService: widget.paymentService,
         socketService: widget.socketService,
         feedbackService: widget.feedbackService,
       ),

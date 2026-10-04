@@ -18,6 +18,18 @@ class PaymentService {
     return PaymentConfig.fromJson(data);
   }
 
+  Future<RazorpayCheckoutDetails> createRazorpayCheckout(String orderId) async {
+    final response = await _api.dio.post<Map<String, dynamic>>(
+      '/payments/razorpay/orders/$orderId',
+    );
+    final data = response.data?['data'] as Map<String, dynamic>? ?? {};
+    final checkout = data['razorpay'] as Map<String, dynamic>?;
+    if (checkout == null) {
+      throw Exception('Razorpay checkout was not returned by the server');
+    }
+    return RazorpayCheckoutDetails.fromJson(checkout);
+  }
+
   Future<RazorpayPaymentResult> openRazorpayCheckout({
     required RazorpayCheckoutDetails checkout,
     required String skipqOrderId,

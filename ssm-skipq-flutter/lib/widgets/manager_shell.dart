@@ -10,6 +10,7 @@ import '../screens/manager/manager_feedback_screen.dart';
 import '../screens/manager/manager_menu_screen.dart';
 import '../screens/manager/manager_orders_screen.dart';
 import '../screens/manager/manager_profile_screen.dart';
+import '../screens/manager/manager_prebook_analytics_screen.dart';
 
 class ManagerShell extends StatefulWidget {
   const ManagerShell({
@@ -39,14 +40,14 @@ class _ManagerShellState extends State<ManagerShell> {
   @override
   void initState() {
     super.initState();
-    _index = widget.initialTab.clamp(0, 3);
+    _index = widget.initialTab.clamp(0, 4);
   }
 
   @override
   void didUpdateWidget(covariant ManagerShell oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialTab != widget.initialTab) {
-      setState(() => _index = widget.initialTab.clamp(0, 3));
+      setState(() => _index = widget.initialTab.clamp(0, 4));
     }
   }
 
@@ -64,6 +65,10 @@ class _ManagerShellState extends State<ManagerShell> {
       ),
       ManagerMenuScreen(menuService: widget.menuService),
       ManagerFeedbackScreen(feedbackService: widget.feedbackService),
+      ManagerPrebookAnalyticsScreen(
+        ordersService: widget.ordersService,
+        socketService: widget.socketService,
+      ),
     ];
 
     return Scaffold(
@@ -108,6 +113,10 @@ class _ManagerShellState extends State<ManagerShell> {
               icon: Icon(Icons.message_outlined),
               selectedIcon: Icon(Icons.message),
               label: 'Feedback'),
+            NavigationDestination(
+              icon: Icon(Icons.schedule_outlined),
+              selectedIcon: Icon(Icons.schedule),
+              label: 'Pre-book'),
         ],
       ),
     );
