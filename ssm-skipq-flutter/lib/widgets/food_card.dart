@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -108,6 +109,18 @@ class FoodCard extends StatelessWidget {
               ),
             ],
           ),
+          if (kDebugMode)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                'WINDOW_OPEN: $orderingOpen',
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF7C2D12),
+                ),
+              ),
+            ),
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
