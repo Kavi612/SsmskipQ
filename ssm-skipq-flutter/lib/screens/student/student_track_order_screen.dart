@@ -47,6 +47,7 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
   bool _cancelling = false;
   bool _paying = false;
   bool _paymentPromptStarted = false;
+  bool _hasReceivedLiveUpdate = false;
   String? _error;
   final Set<String> _submittedFeedback = {};
 
@@ -62,13 +63,14 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
 
   @override
   void dispose() {
-    widget.socketService.off('order:updated');
+    widget.socketService.offOrderUpdated(_handleOrderUpdated);
     super.dispose();
   }
 
   void _handleOrderUpdated(Order updated) {
     if (updated.id == widget.orderId && mounted) {
       setState(() {
+        _hasReceivedLiveUpdate = true;
         _order = updated;
         _loading = false;
         _error = null;
@@ -83,7 +85,8 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
           orders.where((order) => order.id == widget.orderId).toList();
       final latest = matches.isEmpty ? widget.initialOrder : matches.first;
       if (!mounted) return;
-      final resolvedOrder = latest ?? _order;
+      final resolvedOrder =
+          _hasReceivedLiveUpdate ? _order : (latest ?? _order);
       setState(() {
         _order = resolvedOrder;
         _loading = false;
@@ -102,7 +105,8 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _order = widget.initialOrder ?? _order;
+        _order =
+            _hasReceivedLiveUpdate ? _order : (widget.initialOrder ?? _order);
         _loading = false;
         _error = 'Unable to load order details.';
       });
@@ -164,8 +168,8 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
 
     setState(() => _paying = true);
     try {
-        final checkout = await paymentService.createRazorpayCheckout(order.id);
-        final payment = await paymentService.openRazorpayCheckout(
+      final checkout = await paymentService.createRazorpayCheckout(order.id);
+      final payment = await paymentService.openRazorpayCheckout(
         checkout: checkout,
         skipqOrderId: order.id,
         customerName: user.name,
@@ -339,9 +343,9 @@ class _StudentTrackOrderScreenState extends State<StudentTrackOrderScreen> {
 
     final order = _order!;
     final canCancel = order.paymentStatus == PaymentStatus.pending &&
-      (order.status == OrderStatus.preBooked ||
-        order.status == OrderStatus.pending ||
-        order.status == OrderStatus.confirmed);
+        (order.status == OrderStatus.preBooked ||
+            order.status == OrderStatus.pending ||
+            order.status == OrderStatus.confirmed);
 
     return AppScaffold(
       title: 'Track Order',

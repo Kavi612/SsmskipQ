@@ -36,6 +36,14 @@ class ManagerShell extends StatefulWidget {
 
 class _ManagerShellState extends State<ManagerShell> {
   late int _index;
+  int _tabRefreshKey = 0;
+
+  void _selectTab(int index) {
+    setState(() {
+      _index = index;
+      _tabRefreshKey++;
+    });
+  }
 
   @override
   void initState() {
@@ -47,7 +55,10 @@ class _ManagerShellState extends State<ManagerShell> {
   void didUpdateWidget(covariant ManagerShell oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialTab != widget.initialTab) {
-      setState(() => _index = widget.initialTab.clamp(0, 4));
+      setState(() {
+        _index = widget.initialTab.clamp(0, 4);
+        _tabRefreshKey++;
+      });
     }
   }
 
@@ -57,7 +68,8 @@ class _ManagerShellState extends State<ManagerShell> {
       ManagerDashboardScreen(
         ordersService: widget.ordersService,
         socketService: widget.socketService,
-        onViewOrders: () => setState(() => _index = 1),
+        onViewOrders: () => _selectTab(1),
+        refreshKey: _index == 0 ? _tabRefreshKey : 0,
       ),
       ManagerOrdersScreen(
         ordersService: widget.ordersService,
@@ -68,6 +80,8 @@ class _ManagerShellState extends State<ManagerShell> {
       ManagerPrebookAnalyticsScreen(
         ordersService: widget.ordersService,
         socketService: widget.socketService,
+        menuService: widget.menuService,
+        refreshKey: _index == 4 ? _tabRefreshKey : 0,
       ),
     ];
 
@@ -95,7 +109,7 @@ class _ManagerShellState extends State<ManagerShell> {
       body: IndexedStack(index: _index, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: _selectTab,
         destinations: const [
           NavigationDestination(
               icon: Icon(Icons.dashboard_outlined),
@@ -113,7 +127,7 @@ class _ManagerShellState extends State<ManagerShell> {
               icon: Icon(Icons.message_outlined),
               selectedIcon: Icon(Icons.message),
               label: 'Feedback'),
-            NavigationDestination(
+          NavigationDestination(
               icon: Icon(Icons.schedule_outlined),
               selectedIcon: Icon(Icons.schedule),
               label: 'Pre-book'),

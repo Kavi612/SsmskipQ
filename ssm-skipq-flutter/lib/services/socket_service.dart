@@ -10,6 +10,8 @@ class SocketService {
 
   final ApiClient _api;
   io.Socket? _socket;
+  final Map<void Function(Order), void Function(dynamic)>
+      _orderUpdatedListeners = {};
 
   io.Socket? get socket => _socket;
 
@@ -46,15 +48,34 @@ class SocketService {
   }
 
   void joinManagerRoom() {
-    _socket?.emit('join:manager');
+    final socket = _socket;
+    if (socket == null) return;
+    if (socket.connected) {
+      socket.emit('join:manager');
+    } else {
+      socket.once('connect', (_) => socket.emit('join:manager'));
+    }
   }
 
   void onOrderUpdated(void Function(Order order) handler) {
-    _socket?.on('order:updated', (data) {
+    final socket = _socket;
+    if (socket == null) return;
+    offOrderUpdated(handler);
+    void listener(dynamic data) {
       if (data is Map) {
         handler(Order.fromJson(Map<String, dynamic>.from(data)));
       }
-    });
+    }
+
+    _orderUpdatedListeners[handler] = listener;
+    socket.on('order:updated', listener);
+  }
+
+  void offOrderUpdated(void Function(Order order) handler) {
+    final listener = _orderUpdatedListeners.remove(handler);
+    if (listener != null) {
+      _socket?.off('order:updated', listener);
+    }
   }
 
   void onOrderCreated(void Function(Order order) handler) {

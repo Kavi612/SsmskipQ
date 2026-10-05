@@ -42,8 +42,12 @@ String formatIstTime(DateTime dt) {
 }
 
 bool isTodayIst(DateTime dt) {
-  final now = DateTime.now();
-  return dt.year == now.year && dt.month == now.month && dt.day == now.day;
+  const istOffset = Duration(hours: 5, minutes: 30);
+  final nowIst = DateTime.now().toUtc().add(istOffset);
+  final dateIst = dt.toUtc().add(istOffset);
+  return dateIst.year == nowIst.year &&
+      dateIst.month == nowIst.month &&
+      dateIst.day == nowIst.day;
 }
 
 String? studentStatusToastTitle(OrderStatus status) {
@@ -51,8 +55,8 @@ String? studentStatusToastTitle(OrderStatus status) {
     case OrderStatus.confirmed:
     case OrderStatus.preparing:
       return 'Order Accepted';
-      case OrderStatus.active:
-        return 'Order Active';
+    case OrderStatus.active:
+      return 'Order Active';
     case OrderStatus.ready:
       return 'Ready for Pickup';
     default:

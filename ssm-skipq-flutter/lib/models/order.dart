@@ -239,6 +239,7 @@ class Order {
     required this.status,
     required this.tokenNumber,
     required this.createdAt,
+    this.isPreBook = false,
     this.note = '',
     this.student,
     this.cancelledBy,
@@ -256,6 +257,7 @@ class Order {
   final OrderStatus status;
   final String tokenNumber;
   final DateTime createdAt;
+  final bool isPreBook;
   final String note;
   final OrderStudent? student;
   final String? cancelledBy;
@@ -277,6 +279,7 @@ class Order {
       tokenNumber: json['tokenNumber'] as String? ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
+      isPreBook: json['isPreBook'] as bool? ?? json['status'] == 'PRE_BOOKED',
       note: json['note'] as String? ?? '',
       student: json['student'] != null
           ? OrderStudent.fromJson(json['student'] as Map<String, dynamic>)

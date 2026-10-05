@@ -105,7 +105,8 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Your Order', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+          const Text('Your Order',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
           ...cart.items.map(
             (item) => ListTile(
               contentPadding: EdgeInsets.zero,
@@ -118,7 +119,8 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Total', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+              const Text('Total',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
               Text(
                 '₹${cart.totalAmount}',
                 style: const TextStyle(
@@ -142,12 +144,19 @@ class _StudentCheckoutScreenState extends State<StudentCheckoutScreen> {
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(_error!, style: const TextStyle(color: AppTheme.error)),
+              child:
+                  Text(_error!, style: const TextStyle(color: AppTheme.error)),
             ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _processing ? null : _placeOrder,
-            child: Text(_processing ? 'Please wait…' : 'PLACE ORDER'),
+            child: Text(
+              _processing
+                  ? 'Please wait…'
+                  : cart.isPreBook
+                      ? 'Confirm Pre-book'
+                      : 'PLACE ORDER',
+            ),
           ),
         ],
       ),

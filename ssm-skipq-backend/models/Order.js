@@ -69,6 +69,10 @@ const orderSchema = new mongoose.Schema(
       ],
       default: 'PENDING',
     },
+    isPreBook: {
+      type: Boolean,
+      default: false,
+    },
     cancelledBy: {
       type: String,
       enum: ['STUDENT'],

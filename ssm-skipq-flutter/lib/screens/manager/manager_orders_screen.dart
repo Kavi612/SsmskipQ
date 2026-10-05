@@ -107,6 +107,8 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
   List<Order> get _filteredOrders {
     return _orders.where((order) => isTodayIst(order.createdAt)).where((order) {
       switch (_statusFilter) {
+        case 'prebooked':
+          return order.status == OrderStatus.preBooked;
         case 'pending':
           return order.status == OrderStatus.pending ||
               (order.status == OrderStatus.confirmed &&
@@ -138,21 +140,24 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
         children: [
           Text('Today · ${visibleOrders.length} orders'),
           const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: ['pending', 'active', 'completed', 'cancelled']
-                  .map((status) => Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: ChoiceChip(
-                          label: Text(_statusLabel(status)),
-                          selected: _statusFilter == status,
-                          onSelected: (_) =>
-                              setState(() => _statusFilter = status),
-                        ),
-                      ))
-                  .toList(),
-            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              'prebooked',
+              'pending',
+              'active',
+              'completed',
+              'cancelled',
+            ]
+                .map((status) => ChoiceChip(
+                      visualDensity: VisualDensity.compact,
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                      label: Text(_statusLabel(status)),
+                      selected: _statusFilter == status,
+                      onSelected: (_) => setState(() => _statusFilter = status),
+                    ))
+                .toList(),
           ),
           const SizedBox(height: 12),
           if (_loading)
@@ -284,6 +289,8 @@ class _ManagerOrdersScreenState extends State<ManagerOrdersScreen> {
 
   String _statusLabel(String status) {
     switch (status) {
+      case 'prebooked':
+        return 'Pre-booked';
       case 'pending':
         return 'Pending';
       case 'active':

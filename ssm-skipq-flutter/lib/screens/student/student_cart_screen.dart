@@ -128,21 +128,21 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
         return;
       }
 
-          final result = await widget.ordersService.createOrder(
-            items: cart.items
-                .map(
-                  (item) => OrderItem(
-                    menuItemId: item.menuItemId,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity,
-                  ),
-                )
-                .toList(),
-            total: cart.totalAmount,
-            isPreBook: cart.isPreBook,
-            note: cart.note,
-          );
+      final result = await widget.ordersService.createOrder(
+        items: cart.items
+            .map(
+              (item) => OrderItem(
+                menuItemId: item.menuItemId,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+              ),
+            )
+            .toList(),
+        total: cart.totalAmount,
+        isPreBook: cart.isPreBook,
+        note: cart.note,
+      );
 
       if (!mounted) return;
       setState(() => _checkoutOpen = false);
@@ -154,7 +154,8 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
               : 'Order placed successfully'),
         ),
       );
-      context.go('/student/track-order/${result.order.id}', extra: result.order);
+      context.go('/student/track-order/${result.order.id}',
+          extra: result.order);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -419,10 +420,10 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Expanded(
+                        const Expanded(
                           child: Text(
                             'Add a note for the canteen',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
                               color: AppTheme.text,
                             ),
@@ -512,18 +513,31 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
                                     child: SizedBox(
                                       height: 24,
                                       child: FilledButton(
-                                        onPressed: () => context
-                                            .read<CartProvider>()
-                                            .addItem(
-                                              menuItemId: item.id,
-                                              name: item.name,
-                                              price: item.price,
-                                              imageUrl: item.imageUrl,
-                                              isVeg: item.isVeg,
-                                              available: item.available,
-                                              categoryId: item.categoryId,
-                                              categoryName: item.categoryName,
-                                            ),
+                                        onPressed: () {
+                                          final cart =
+                                              context.read<CartProvider>();
+                                          final added = cart.addItem(
+                                            menuItemId: item.id,
+                                            name: item.name,
+                                            price: item.price,
+                                            imageUrl: item.imageUrl,
+                                            isVeg: item.isVeg,
+                                            available: item.available,
+                                            isPreBook: cart.isPreBook,
+                                            categoryId: item.categoryId,
+                                            categoryName: item.categoryName,
+                                          );
+                                          if (!added) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Clear your current cart before starting a pre-book or regular order.',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
                                         style: FilledButton.styleFrom(
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 10),
@@ -628,14 +642,19 @@ class _StudentCartScreenState extends State<StudentCartScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                                onPressed: _processing ||
-                                  _catalogLoading ||
+                            onPressed: _processing ||
+                                    _catalogLoading ||
                                     !_catalogLoaded ||
                                     hasUnavailableItems
                                 ? null
                                 : _placeOrder,
                             child: Text(
-                                _processing ? 'Please wait…' : 'PLACE ORDER'),
+                              _processing
+                                  ? 'Please wait…'
+                                  : cart.isPreBook
+                                      ? 'Confirm Pre-book'
+                                      : 'PLACE ORDER',
+                            ),
                           ),
                         ),
                       ],

@@ -38,76 +38,105 @@ class OrderStatusTimeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = _rank(status);
+    final isCancelled = status == OrderStatus.cancelled;
 
     return SizedBox(
       height: 86,
       child: LayoutBuilder(
-        builder: (context, constraints) => Stack(
-          children: [
-            Positioned(
-              top: 19,
-              left: constraints.maxWidth / (_steps.length * 2),
-              right: constraints.maxWidth / (_steps.length * 2),
-              child: Container(
-                height: 3,
-                color: status == OrderStatus.cancelled || current < 1
-                    ? AppTheme.border
-                    : AppTheme.primary,
-              ),
-            ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: List.generate(_steps.length, (index) {
-              final step = _steps[index];
-              final isDone = status != OrderStatus.cancelled && current > index;
-              final isCurrent = status != OrderStatus.cancelled && current == index;
-              final isFuture = status != OrderStatus.cancelled && current < index;
-              final contentColor = isDone || isCurrent
-                  ? AppTheme.primary
-                  : AppTheme.textMuted;
-              final fillColor = index == _steps.length - 1 &&
-                      status == OrderStatus.pickedUp
-                  ? AppTheme.primary
-                  : isDone || isCurrent
-                  ? Colors.white
-                      : AppTheme.gray100;
-              final borderColor = isDone || isCurrent
-                  ? AppTheme.primary
-                  : AppTheme.border;
+        builder: (context, constraints) {
+          final stepWidth = constraints.maxWidth / _steps.length;
+          final progress = current < 0 ? 0.0 : current / (_steps.length - 1);
+          final progressWidth = constraints.maxWidth - stepWidth;
 
-              return Expanded(
-                child: Column(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: fillColor,
-                        border: Border.all(color: borderColor, width: 2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(step.$3, color: contentColor, size: 19),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      step.$2,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight:
-                            isCurrent ? FontWeight.w700 : FontWeight.w600,
-                        color: isFuture ? AppTheme.textMuted : AppTheme.text,
-                      ),
-                    ),
-                  ],
+          return Stack(
+            children: [
+              Positioned(
+                top: 19,
+                left: stepWidth / 2,
+                right: stepWidth / 2,
+                child: Container(height: 3, color: AppTheme.border),
+              ),
+              if (!isCancelled && progress > 0)
+                Positioned(
+                  top: 19,
+                  left: stepWidth / 2,
+                  child: Container(
+                    width: progressWidth * progress,
+                    height: 3,
+                    color: AppTheme.primary,
+                  ),
                 ),
-              );
-              }),
-            ),
-          ],
-        ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: List.generate(_steps.length, (index) {
+                  final step = _steps[index];
+                  final isDone = !isCancelled && current > index;
+                  final isCurrent = !isCancelled && current == index;
+                  final isFuture = isCancelled || current < index;
+                  final contentColor = isDone
+                      ? Colors.white
+                      : isCurrent
+                          ? AppTheme.primaryActive
+                          : AppTheme.textMuted;
+                  final fillColor = isDone
+                      ? AppTheme.primary
+                      : isCurrent
+                          ? AppTheme.primaryMuted
+                          : AppTheme.gray100;
+                  final borderColor =
+                      isDone || isCurrent ? AppTheme.primary : AppTheme.border;
+                  final state = isDone
+                      ? 'completed'
+                      : isCurrent
+                          ? 'current'
+                          : 'future';
+
+                  return Expanded(
+                    child: Column(
+                      children: [
+                        Container(
+                          key:
+                              ValueKey('order-status-step-${step.$1.apiValue}'),
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: fillColor,
+                            border: Border.all(
+                              color: borderColor,
+                              width: isCurrent ? 3 : 2,
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Semantics(
+                            label: '${step.$2}, $state',
+                            child: Icon(step.$3, color: contentColor, size: 19),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          step.$2,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight:
+                                isCurrent ? FontWeight.w700 : FontWeight.w600,
+                            color: isFuture
+                                ? AppTheme.textMuted
+                                : isCurrent
+                                    ? AppTheme.primaryActive
+                                    : AppTheme.text,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

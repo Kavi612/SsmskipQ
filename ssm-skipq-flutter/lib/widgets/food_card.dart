@@ -101,7 +101,7 @@ class FoodCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 12.5,
+                    fontSize: 13.5,
                     color: Color(0xFF1F2937),
                   ),
                 ),
@@ -110,17 +110,21 @@ class FoodCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                '₹${item.price}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13.5,
-                  color: Color(0xFF111827),
+              Expanded(
+                child: Text(
+                  '₹${item.price}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14.5,
+                    color: Color(0xFF111827),
+                  ),
                 ),
               ),
+              const SizedBox(width: 4),
               DecoratedBox(
                 decoration: BoxDecoration(
                   color: item.available
@@ -130,26 +134,33 @@ class FoodCard extends StatelessWidget {
                 ),
                 child: !item.available
                     ? Semantics(
+                        key: const ValueKey('food-card-sold-out'),
                         button: true,
                         enabled: false,
                         label: 'Sold Out',
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 7,
-                          ),
-                          child: Text(
-                            'Sold Out',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 10,
+                            ),
+                            child: Center(
+                              child: Text(
+                                'Sold Out',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       )
                     : quantity == 0
                         ? GestureDetector(
+                            behavior: HitTestBehavior.opaque,
                             onTap: () {
                               final added = cart.addItem(
                                 menuItemId: item.id,
@@ -172,36 +183,41 @@ class FoodCard extends StatelessWidget {
                                 );
                               }
                             },
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isPreBook ? 8 : 12,
-                                vertical: 7,
-                              ),
-                              child: isPreBook
-                                  ? const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.schedule, size: 13,
-                                            color: Colors.white),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          'Pre-book',
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 48),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isPreBook ? 4 : 10,
+                                  vertical: 10,
+                                ),
+                                child: isPreBook
+                                    ? const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.schedule,
+                                              size: 16, color: Colors.white),
+                                          SizedBox(width: 5),
+                                          Text(
+                                            'Pre-book',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : const Center(
+                                        child: Text(
+                                          'ADD',
                                           style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 11,
+                                            fontSize: 13,
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),
-                                      ],
-                                    )
-                                  : const Text(
-                                      'ADD',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
                                       ),
-                                    ),
+                              ),
                             ),
                           )
                         : Row(
@@ -247,10 +263,12 @@ class _QuantityButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-        child: Icon(icon, size: 16, color: Colors.white),
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Center(child: Icon(icon, size: 18, color: Colors.white)),
       ),
     );
   }

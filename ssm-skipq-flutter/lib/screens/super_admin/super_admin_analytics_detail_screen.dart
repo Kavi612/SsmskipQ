@@ -10,10 +10,12 @@ import '../../services/menu_service.dart';
 import '../../services/orders_service.dart';
 import '../../services/feedback_service.dart';
 import '../../services/super_admin_service.dart';
+import '../../widgets/analytics_category_bar_chart.dart';
 import '../../widgets/menu_item_image.dart';
 import 'super_admin_feedback_analytics_screen.dart';
 import 'super_admin_revenue_analytics_screen.dart';
 import 'super_admin_cancellation_analytics_screen.dart';
+import 'super_admin_prebook_analytics_screen.dart';
 import 'super_admin_date_filter.dart';
 
 class SuperAdminAnalyticsDetailScreen extends StatelessWidget {
@@ -59,6 +61,12 @@ class SuperAdminAnalyticsDetailScreen extends StatelessWidget {
     }
     if (title == 'Cancellation Analytics') {
       return CancellationAnalyticsScreen(
+        superAdminService: superAdminService,
+        initialSelection: filter,
+      );
+    }
+    if (title == 'Pre-book Analytics') {
+      return SuperAdminPrebookAnalyticsScreen(
         superAdminService: superAdminService,
         initialSelection: filter,
       );
@@ -281,64 +289,13 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
 
   Widget _categorySection(List<Order> orders) {
     final buckets = _categoryBuckets(orders);
-    final chartMax = _chartScaleMax(buckets.map((bucket) => bucket.value));
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Orders by Category',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            Text(_selection.label,
-                style: const TextStyle(color: AppTheme.textSecondary)),
-            const SizedBox(height: 14),
-            SizedBox(
-              height: 220,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: buckets.map((bucket) {
-                    final height =
-                        bucket.value == 0 ? 2.0 : 150 * bucket.value / chartMax;
-                    return Tooltip(
-                      message: '${bucket.value} orders',
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: SizedBox(
-                          width: buckets.length > 8 ? 52 : 68,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              SizedBox(height: 150 - height),
-                              Container(
-                                height: height,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primary,
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(bucket.label,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 10)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-            Text('Scale: 0 - $chartMax orders',
-                style:
-                    const TextStyle(color: AppTheme.textMuted, fontSize: 11)),
-          ],
-        ),
-      ),
+    return AnalyticsCategoryBarChart(
+      title: 'Orders by Category',
+      subtitle: _selection.label,
+      unitLabel: 'orders',
+      categories: buckets
+          .map((bucket) => AnalyticsCategoryBar(bucket.label, bucket.value))
+          .toList(),
     );
   }
 
@@ -484,16 +441,4 @@ class _RankedItem {
 
   final MenuItem item;
   final int quantity;
-}
-
-int _chartScaleMax(Iterable<int> values) {
-  final maximum = values.fold<int>(0, math.max);
-  for (final step in [100, 1000, 5000, 10000]) {
-    if (maximum <= step) return step;
-  }
-  var scale = 20000;
-  while (scale < maximum) {
-    scale *= 2;
-  }
-  return scale;
 }

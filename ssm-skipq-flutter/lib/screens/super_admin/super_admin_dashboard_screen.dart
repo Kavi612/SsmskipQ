@@ -163,6 +163,11 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                     Icons.payments_outlined, 'Revenue Analytics'),
                 _summaryCard('Cancellation Analytics', '$cancelledOrders',
                     Icons.cancel_outlined, 'Cancellation Analytics'),
+                _summaryCard(
+                    'Pre-book Analytics',
+                    '${orders.where((order) => order.isPreBook || order.status == OrderStatus.preBooked).length}',
+                    Icons.event_note_outlined,
+                    'Pre-book Analytics'),
               ],
             ),
             const SizedBox(height: 22),
